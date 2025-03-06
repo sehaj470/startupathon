@@ -1,0 +1,43 @@
+/* ScrollAnimationSection.css */
+
+.scroll-animation-section {
+    width: 100%;
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 100px 20px;
+    position: relative;
+  }
+  
+  .main-title {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+    text-align: center;
+  }
+  
+  .sub-text {
+    font-size: 1.2rem;
+    margin-bottom: 2rem;
+    text-align: center;
+    max-width: 800px;
+    margin: 0 auto 2rem;
+  }
+  
+  .vertical-divider {
+    width: 2px;
+    height: 300px;
+    background-color: #666;
+    margin: 40px auto;
+  }
+  
+  .animated-row {
+    display: flex;
+    align-items: center;
+    margin: 40px 0;
+  }
+  
+  .animated-icon {
+    width: 60px;
+    height: 60px;
+    margin-right: 20px;
+  }
+  
