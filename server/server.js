@@ -25,6 +25,8 @@ app.use(cors({
 
 app.use(express.json());
 
+mongoose.connect('mongodb+srv://sehajsaran47:DoctorVehmaDa@5911@cluster0.9siwc.mongodb.net/startupthonDB?retryWrites=true&w=majority&appName=Cluster0')
+
 // Connect to DB
 connectDB();
 
