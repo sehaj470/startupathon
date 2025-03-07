@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { API_ENDPOINTS } from '../config/api';
+import { API_ENDPOINTS, getImageUrl } from '../config/api';
 
 const CompleterDetails = () => {
   const [completer, setCompleter] = useState(null);
@@ -13,11 +13,13 @@ const CompleterDetails = () => {
   useEffect(() => {
     const fetchCompleter = async () => {
       try {
+        console.log('Fetching completer details from:', `${API_ENDPOINTS.COMPLETERS}/${id}`);
         const res = await axios.get(`${API_ENDPOINTS.COMPLETERS}/${id}`);
         if (!res.data.visible) {
           navigate('/'); // Redirect if not visible
           return;
         }
+        console.log('Completer data received:', res.data);
         setCompleter(res.data);
         setLoading(false);
       } catch (err) {
@@ -46,80 +48,76 @@ const CompleterDetails = () => {
     );
   }
 
-  const getImageUrl = (imagePath) => {
-    if (!imagePath) return 'https://via.placeholder.com/300';
-    
-    // Check if the image path is already a full URL (Cloudinary)
-    if (imagePath.startsWith('http')) {
-      return imagePath;
-    }
-    
-    // Extract the base URL from the API_ENDPOINTS
-    const baseUrl = API_ENDPOINTS.COMPLETERS.split('/api')[0];
-    // Fallback for local development
-    return `${baseUrl}/uploads/completers/${imagePath}`;
-  };
-
   return (
-    <div className="min-h-screen bg-[#0A0111] py-30 px-4">
-      <div className="max-w-6xl mx-auto">
-        <h1 className="text-5xl font-bold text-white text-center mb-8">
-          {completer.projectName}
-        </h1>
-
-        <div className="py-30 bg-[#1E0635] rounded-lg p-8 shadow-lg border border-[#8B6FD0]">
-          <div className="flex flex-col md:flex-row gap-8 mb-8">
-            <div className="w-full md:w-1/3">
-              <img
-                src={getImageUrl(completer.profilePicture)}
-                alt={completer.profile}
-                className="w-full h-[400px] object-cover rounded-lg"
-                onError={(e) => {
-                  e.target.onerror = null;
-                  e.target.src = 'https://via.placeholder.com/300';
-                }}
-              />
-            </div>
-
-            <div className="w-full md:w-2/3 ">
-              <h2 className="text-2xl font-bold text-white mb-2">
-                {completer.profile}
-              </h2>
-              <p className="text-xl text-purple-400 mb-4">{completer.position}</p>
-              
-              {completer.linkedinUrl && (
-                <a
-                  href={completer.linkedinUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 bg-[#5d268d] text-white px-4 py-2 rounded hover:bg-[#eeddffbb] hover:text-[#5d268d] transition-colors mb-20"
-                >
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
-                  </svg>
-                  Connect on LinkedIn
-                </a>
-              )}
-
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold text-white mb-2">
-                  Initial Funding Received:
-                </h3>
-                <p className="text-2xl text-purple-400 font-bold">
-                  {completer.funding}
-                </p>
-              </div>
-
-              <div>
-                <h3 className="text-lg font-semibold text-white mb-2">
-                  About the Journey:
-                </h3>
-                <p className="text-gray-300 leading-relaxed">
-                  {completer.description}
-                </p>
-              </div>
-            </div>
+    <div className="min-h-screen bg-[#0A0111] py-12 px-4">
+      <div className="max-w-4xl mx-auto bg-[#1A0B2E] rounded-lg overflow-hidden shadow-xl border border-[#3A2A4D]">
+        {/* Header with image */}
+        <div className="h-64 relative">
+          <img
+            src={getImageUrl(completer.image, 'completers')}
+            alt={completer.projectName}
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.src = 'https://via.placeholder.com/1200x400';
+            }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0A0111] to-transparent"></div>
+          <div className="absolute bottom-4 left-6">
+            <h1 className="text-3xl font-bold text-white">{completer.projectName}</h1>
           </div>
+        </div>
+        
+        {/* Content */}
+        <div className="p-6">
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold text-white mb-2">Founder</h2>
+            <p className="text-gray-300">{completer.profile}</p>
+          </div>
+          
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold text-white mb-2">Position</h2>
+            <p className="text-gray-300">{completer.position}</p>
+          </div>
+          
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold text-white mb-2">Initial Funding</h2>
+            <p className="text-[#714EC4] font-bold">{completer.funding}</p>
+          </div>
+          
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold text-white mb-2">About the Project</h2>
+            <p className="text-gray-300 whitespace-pre-line">{completer.description}</p>
+          </div>
+          
+          {completer.linkedinUrl && (
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold text-white mb-2">Connect</h2>
+              <a
+                href={completer.linkedinUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 bg-[#0077B5] text-white px-4 py-2 rounded-md hover:bg-[#005885] transition-colors"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="currentColor"
+                  viewBox="0 0 448 512"
+                  className="w-4 h-4"
+                >
+                  <path d="M100.28 448H7.4V149.5h92.88zM53.79 108.1a53.79 53.79 0 1 1 53.79-53.79 53.79 53.79 0 0 1-53.79 53.79zM447.9 448h-92.68V302.4c0-34.7-.7-79.3-48.34-79.3-48.4 0-55.8 37.8-55.8 76.7V448H158V149.5h89V185h1.3c12.4-23.5 42.6-48.3 87.7-48.3 93.9 0 111.1 61.8 111.1 142.3V448z" />
+                </svg>
+                LinkedIn Profile
+              </a>
+            </div>
+          )}
+          
+          <button
+            onClick={() => navigate('/completers')}
+            className="bg-[#7F5ED5] text-white px-6 py-2 rounded-md hover:bg-[#855DEF] transition-colors"
+          >
+            Back to Completers
+          </button>
         </div>
       </div>
     </div>

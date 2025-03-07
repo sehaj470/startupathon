@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { API_ENDPOINTS, getAuthConfig } from '../../config/api';
 
 const SubscribersAdmin = () => {
   const navigate = useNavigate();
@@ -13,31 +14,20 @@ const SubscribersAdmin = () => {
   const [formData, setFormData] = useState({ email: '' });
   const [showAddForm, setShowAddForm] = useState(false);
 
-  const getAuthConfig = () => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      navigate('/admin/login');
-      throw new Error('No token found');
-    }
-    return {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
-    };
-  };
-
   const fetchSubscribers = async (page = 1, search = '') => {
     try {
       setLoading(true);
+      console.log('Fetching subscribers from:', `${API_ENDPOINTS.ADMIN_SUBSCRIBERS}?page=${page}&search=${search}`);
       const res = await axios.get(
-        `http://localhost:5000/api/admin/subscribers?page=${page}&search=${search}`,
+        `${API_ENDPOINTS.ADMIN_SUBSCRIBERS}?page=${page}&search=${search}`,
         getAuthConfig()
       );
+      console.log('Subscribers data received:', res.data);
       setSubscribers(res.data.subscribers);
       setTotalPages(res.data.totalPages);
       setError('');
     } catch (err) {
+      console.error('Error fetching subscribers:', err);
       if (err.response?.status === 401) {
         navigate('/admin/login');
       }
@@ -59,15 +49,18 @@ const SubscribersAdmin = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      console.log('Adding new subscriber:', formData.email);
       const res = await axios.post(
-        'http://localhost:5000/api/admin/subscribers',
+        API_ENDPOINTS.ADMIN_SUBSCRIBERS,
         formData,
         getAuthConfig()
       );
+      console.log('Subscriber added:', res.data);
       setSubscribers([...subscribers, res.data]);
       setFormData({ email: '' });
       setShowAddForm(false);
     } catch (err) {
+      console.error('Error adding subscriber:', err);
       setError(err.response?.data?.error || 'Failed to add subscriber');
     }
   };
@@ -75,12 +68,15 @@ const SubscribersAdmin = () => {
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this subscriber?')) {
       try {
+        console.log('Deleting subscriber with ID:', id);
         await axios.delete(
-          `http://localhost:5000/api/admin/subscribers/${id}`,
+          `${API_ENDPOINTS.ADMIN_SUBSCRIBERS}/${id}`,
           getAuthConfig()
         );
+        console.log('Subscriber deleted successfully');
         fetchSubscribers(currentPage, searchTerm);
       } catch (err) {
+        console.error('Error deleting subscriber:', err);
         setError('Failed to delete subscriber');
       }
     }

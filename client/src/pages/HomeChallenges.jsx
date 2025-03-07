@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { API_ENDPOINTS } from '../config/api';
+import { API_ENDPOINTS, getImageUrl } from '../config/api';
 
 const HomeChallenges = () => {
   const [challenges, setChallenges] = useState([]);
@@ -9,9 +9,11 @@ const HomeChallenges = () => {
 
   useEffect(() => {
     setLoading(true);
+    console.log('Fetching challenges from:', API_ENDPOINTS.CHALLENGES);
     axios
       .get(API_ENDPOINTS.CHALLENGES)
       .then((res) => {
+        console.log('Challenges data received:', res.data);
         setChallenges(res.data);
         setLoading(false);
       })
@@ -21,20 +23,6 @@ const HomeChallenges = () => {
         setLoading(false);
       });
   }, []);
-
-  const getImageUrl = (imagePath) => {
-    if (!imagePath) return 'https://via.placeholder.com/80';
-    
-    // Check if the image path is already a full URL (Cloudinary)
-    if (imagePath.startsWith('http')) {
-      return imagePath;
-    }
-    
-    // Extract the base URL from the API_ENDPOINTS
-    const baseUrl = API_ENDPOINTS.CHALLENGES.split('/api')[0];
-    // Fallback for local development
-    return `${baseUrl}/uploads/challenges/${imagePath}`;
-  };
 
   if (loading) {
     return (
@@ -95,7 +83,7 @@ const HomeChallenges = () => {
                 {/* Fixed-Size Image (80×80) */}
                 <div className="w-20 h-20 mb-4 overflow-hidden rounded-lg flex-shrink-0">
                   <img
-                    src={getImageUrl(challenge.image)}
+                    src={getImageUrl(challenge.image, 'challenges')}
                     alt={challenge.title}
                     className="w-full h-full object-cover"
                     onError={(e) => {

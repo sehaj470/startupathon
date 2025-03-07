@@ -25,7 +25,12 @@ const Banner = ({
       }
   
       setIsLoading(true);
+      console.log('Attempting to subscribe with email:', email);
+      console.log('Using API endpoint:', API_ENDPOINTS.SUBSCRIBERS);
+      
       const res = await axios.post(API_ENDPOINTS.SUBSCRIBERS, { email });
+      
+      console.log('Subscription successful:', res.data);
       setMessage({ 
         type: 'success', 
         text: 'Successfully subscribed! Thank you for joining us.' 
@@ -33,10 +38,29 @@ const Banner = ({
       setEmail('');
     } catch (err) {
       console.error('Subscription error:', err);
-      setMessage({ 
-        type: 'error', 
-        text: err.response?.data?.error || 'Failed to subscribe. Please try again.' 
-      });
+      
+      if (err.response) {
+        console.error('Error response:', {
+          status: err.response.status,
+          data: err.response.data
+        });
+        setMessage({ 
+          type: 'error', 
+          text: err.response.data?.error || `Server error: ${err.response.status}` 
+        });
+      } else if (err.request) {
+        console.error('No response received:', err.request);
+        setMessage({ 
+          type: 'error', 
+          text: 'No response from server. Please check your internet connection.' 
+        });
+      } else {
+        console.error('Error setting up request:', err.message);
+        setMessage({ 
+          type: 'error', 
+          text: `Request error: ${err.message}` 
+        });
+      }
     } finally {
       setIsLoading(false);
     }

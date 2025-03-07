@@ -3,6 +3,7 @@ require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
+const mongoose = require('mongoose');
 const connectDB = require('./config/db');
 const { checkEnvVars } = require('./checkEnv');
 
@@ -47,6 +48,24 @@ app.get('/api/health', (req, res) => {
     res.status(200).json({ status: 'ok' });
 });
 
+// Database connection status endpoint
+app.get('/api/db-status', (req, res) => {
+    console.log('DB status check endpoint hit');
+    const dbStatus = mongoose.connection.readyState;
+    const statusMap = {
+        0: 'disconnected',
+        1: 'connected',
+        2: 'connecting',
+        3: 'disconnecting'
+    };
+    
+    res.status(200).json({ 
+        status: statusMap[dbStatus] || 'unknown',
+        readyState: dbStatus,
+        connected: dbStatus === 1
+    });
+});
+
 // Connect to DB with better error handling
 let dbConnected = false;
 try {
@@ -55,6 +74,15 @@ try {
         .then(() => {
             dbConnected = true;
             console.log('MongoDB connected successfully');
+            
+            // Log connection status periodically
+            setInterval(() => {
+                const status = mongoose.connection.readyState;
+                const statusText = status === 1 ? 'connected' : 
+                                  status === 2 ? 'connecting' : 
+                                  status === 3 ? 'disconnecting' : 'disconnected';
+                console.log(`MongoDB connection status: ${statusText} (${status})`);
+            }, 60000); // Check every minute
         })
         .catch(error => {
             console.error('Failed to connect to MongoDB:', error);

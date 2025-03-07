@@ -16,9 +16,16 @@ const Login = () => {
     setError('');
     
     try {
+      console.log('Attempting login with API endpoint:', API_ENDPOINTS.AUTH);
       const res = await axios.post(`${API_ENDPOINTS.AUTH}/login`, {
         email,
         password
+      });
+      
+      console.log('Login successful, received response:', { 
+        status: res.status,
+        role: res.data.role,
+        tokenReceived: !!res.data.token
       });
       
       // Store just the token without 'Bearer' prefix
@@ -28,7 +35,20 @@ const Login = () => {
       navigate('/admin/challenges');
     } catch (err) {
       console.error('Login error:', err);
-      setError(err.response?.data?.error || 'Login failed');
+      
+      if (err.response) {
+        console.error('Error response:', {
+          status: err.response.status,
+          data: err.response.data
+        });
+        setError(err.response.data?.error || `Server error: ${err.response.status}`);
+      } else if (err.request) {
+        console.error('No response received:', err.request);
+        setError('No response from server. Please check your internet connection.');
+      } else {
+        console.error('Error setting up request:', err.message);
+        setError(`Request error: ${err.message}`);
+      }
     } finally {
       setLoading(false);
     }

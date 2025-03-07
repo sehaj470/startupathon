@@ -1,19 +1,22 @@
 // API configuration for both development and production environments
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
+// Remove trailing slash if present
+const normalizedApiUrl = API_URL.endsWith('/') ? API_URL.slice(0, -1) : API_URL;
+
 // Base API endpoints
 export const API_ENDPOINTS = {
   // Public endpoints
-  CHALLENGES: `${API_URL}/api/challenges`,
-  COMPLETERS: `${API_URL}/api/completers`,
-  SUBSCRIBERS: `${API_URL}/api/subscribers`,
+  CHALLENGES: `${normalizedApiUrl}/api/challenges`,
+  COMPLETERS: `${normalizedApiUrl}/api/completers`,
+  SUBSCRIBERS: `${normalizedApiUrl}/api/subscribers`,
   
   // Admin endpoints
-  AUTH: `${API_URL}/api/auth`,
-  ADMIN_CHALLENGES: `${API_URL}/api/admin/challenges`,
-  ADMIN_FOUNDERS: `${API_URL}/api/admin/founders`,
-  ADMIN_COMPLETERS: `${API_URL}/api/admin/completers`,
-  ADMIN_SUBSCRIBERS: `${API_URL}/api/admin/subscribers`,
+  AUTH: `${normalizedApiUrl}/api/auth`,
+  ADMIN_CHALLENGES: `${normalizedApiUrl}/api/admin/challenges`,
+  ADMIN_FOUNDERS: `${normalizedApiUrl}/api/admin/founders`,
+  ADMIN_COMPLETERS: `${normalizedApiUrl}/api/admin/completers`,
+  ADMIN_SUBSCRIBERS: `${normalizedApiUrl}/api/admin/subscribers`,
 };
 
 // Helper function to get auth config for protected routes
@@ -25,6 +28,25 @@ export const getAuthConfig = (contentType = 'application/json') => {
       'Content-Type': contentType
     }
   };
+};
+
+// Helper function to get image URL (handles both Cloudinary and local images)
+export const getImageUrl = (imagePath, type = 'challenges') => {
+  if (!imagePath) return 'https://via.placeholder.com/300';
+  
+  // Check if the image path is already a full URL (Cloudinary)
+  if (imagePath.startsWith('http')) {
+    return imagePath;
+  }
+  
+  // For production (Vercel), use Cloudinary
+  if (import.meta.env.PROD || normalizedApiUrl.includes('vercel.app')) {
+    // Default Cloudinary URL pattern
+    return `https://res.cloudinary.com/dvdnfmmia/image/upload/startupathon/${type}/${imagePath}`;
+  }
+  
+  // For local development
+  return `${normalizedApiUrl}/uploads/${type}/${imagePath}`;
 };
 
 // File upload validation
