@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import { API_ENDPOINTS } from '../../config/api';
+import { API_ENDPOINTS, apiRequest } from '../../config/api';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -17,38 +16,25 @@ const Login = () => {
     
     try {
       console.log('Attempting login with API endpoint:', API_ENDPOINTS.AUTH);
-      const res = await axios.post(`${API_ENDPOINTS.AUTH}/login`, {
+      
+      const data = await apiRequest('post', `${API_ENDPOINTS.AUTH}/login`, {
         email,
         password
       });
       
       console.log('Login successful, received response:', { 
-        status: res.status,
-        role: res.data.role,
-        tokenReceived: !!res.data.token
+        role: data.role,
+        tokenReceived: !!data.token
       });
       
       // Store just the token without 'Bearer' prefix
-      localStorage.setItem('token', res.data.token);
-      localStorage.setItem('role', res.data.role);
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('role', data.role);
       
       navigate('/admin/challenges');
     } catch (err) {
       console.error('Login error:', err);
-      
-      if (err.response) {
-        console.error('Error response:', {
-          status: err.response.status,
-          data: err.response.data
-        });
-        setError(err.response.data?.error || `Server error: ${err.response.status}`);
-      } else if (err.request) {
-        console.error('No response received:', err.request);
-        setError('No response from server. Please check your internet connection.');
-      } else {
-        console.error('Error setting up request:', err.message);
-        setError(`Request error: ${err.message}`);
-      }
+      setError(err.message || 'Login failed. Please try again.');
     } finally {
       setLoading(false);
     }

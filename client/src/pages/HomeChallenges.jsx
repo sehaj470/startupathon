@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-import { API_ENDPOINTS, getImageUrl } from '../config/api';
+import { API_ENDPOINTS, getImageUrl, apiRequest } from '../config/api';
 
 const HomeChallenges = () => {
   const [challenges, setChallenges] = useState([]);
@@ -8,20 +7,25 @@ const HomeChallenges = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    setLoading(true);
-    console.log('Fetching challenges from:', API_ENDPOINTS.CHALLENGES);
-    axios
-      .get(API_ENDPOINTS.CHALLENGES)
-      .then((res) => {
-        console.log('Challenges data received:', res.data);
-        setChallenges(res.data);
-        setLoading(false);
-      })
-      .catch((err) => {
+    const fetchChallenges = async () => {
+      try {
+        setLoading(true);
+        console.log('Fetching challenges from:', API_ENDPOINTS.CHALLENGES);
+        
+        const data = await apiRequest('get', API_ENDPOINTS.CHALLENGES);
+        console.log('Challenges data received:', data);
+        
+        setChallenges(data);
+        setError(null);
+      } catch (err) {
         console.error('Error fetching challenges:', err);
         setError('Failed to load challenges. Please try again later.');
+      } finally {
         setLoading(false);
-      });
+      }
+    };
+
+    fetchChallenges();
   }, []);
 
   if (loading) {

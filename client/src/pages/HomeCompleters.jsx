@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { API_ENDPOINTS, getImageUrl } from '../config/api';
+import { API_ENDPOINTS, getImageUrl, apiRequest } from '../config/api';
 
 const HomeCompleters = () => {
   const navigate = useNavigate();
@@ -14,9 +13,11 @@ const HomeCompleters = () => {
       try {
         setLoading(true);
         console.log('Fetching completers from:', API_ENDPOINTS.COMPLETERS);
-        const res = await axios.get(API_ENDPOINTS.COMPLETERS);
-        console.log('Completers data received:', res.data);
-        setCompleters(res.data);
+        
+        const data = await apiRequest('get', API_ENDPOINTS.COMPLETERS);
+        console.log('Completers data received:', data);
+        
+        setCompleters(data);
         setError(null);
       } catch (err) {
         console.error('Error fetching completers:', err);

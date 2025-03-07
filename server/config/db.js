@@ -17,12 +17,18 @@ const connectDB = async () => {
       throw new Error('MONGO_URI environment variable is not defined');
     }
     
-    // Set connection options with timeout
+    // Set connection options with timeout and retry
     const options = {
       useNewUrlParser: true,
       useUnifiedTopology: true,
-      serverSelectionTimeoutMS: 5000, // 5 seconds timeout for server selection
-      connectTimeoutMS: 10000, // 10 seconds timeout for initial connection
+      serverSelectionTimeoutMS: 30000, // 30 seconds timeout for server selection
+      connectTimeoutMS: 30000, // 30 seconds timeout for initial connection
+      socketTimeoutMS: 45000, // 45 seconds timeout for socket operations
+      family: 4, // Use IPv4, skip trying IPv6
+      retryWrites: true,
+      retryReads: true,
+      maxPoolSize: 10, // Maximum number of connections in the connection pool
+      minPoolSize: 5, // Minimum number of connections in the connection pool
     };
     
     await mongoose.connect(process.env.MONGO_URI, options);
@@ -37,6 +43,13 @@ const connectDB = async () => {
     } else if (error.name === 'MongoServerSelectionError') {
       console.error('Could not connect to any MongoDB server');
       console.error('Please check your network connection and MongoDB Atlas whitelist settings');
+      console.error('Error details:', error);
+    } else if (error.name === 'MongoNetworkError') {
+      console.error('Network error connecting to MongoDB');
+      console.error('Please check your network connection and MongoDB Atlas whitelist settings');
+      console.error('Error details:', error);
+    } else {
+      console.error('Unexpected MongoDB error:', error);
     }
     
     // Don't exit the process, let the server handle the error

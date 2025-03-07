@@ -39,8 +39,75 @@ export const getAuthConfig = (contentType = 'application/json') => {
       'Content-Type': contentType,
       'Accept': 'application/json'
     },
-    withCredentials: false // Disable sending cookies for cross-origin requests
+    withCredentials: false, // Disable sending cookies for cross-origin requests
+    timeout: 30000 // 30 seconds timeout
   };
+};
+
+// Helper function for making API requests with error handling
+export const apiRequest = async (method, url, data = null, config = {}) => {
+  const axios = (await import('axios')).default;
+  
+  try {
+    console.log(`Making ${method} request to:`, url);
+    
+    const defaultConfig = {
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      withCredentials: false,
+      timeout: 30000
+    };
+    
+    const mergedConfig = { ...defaultConfig, ...config };
+    
+    let response;
+    if (method.toLowerCase() === 'get') {
+      response = await axios.get(url, mergedConfig);
+    } else if (method.toLowerCase() === 'post') {
+      response = await axios.post(url, data, mergedConfig);
+    } else if (method.toLowerCase() === 'put') {
+      response = await axios.put(url, data, mergedConfig);
+    } else if (method.toLowerCase() === 'delete') {
+      response = await axios.delete(url, mergedConfig);
+    } else {
+      throw new Error(`Unsupported method: ${method}`);
+    }
+    
+    console.log(`${method} request to ${url} successful:`, response.data);
+    return response.data;
+  } catch (error) {
+    console.error(`Error in ${method} request to ${url}:`, error);
+    
+    if (error.response) {
+      // The request was made and the server responded with a status code
+      // that falls out of the range of 2xx
+      console.error('Error response:', {
+        status: error.response.status,
+        data: error.response.data
+      });
+      throw {
+        message: error.response.data?.error || `Server error: ${error.response.status}`,
+        status: error.response.status,
+        data: error.response.data
+      };
+    } else if (error.request) {
+      // The request was made but no response was received
+      console.error('No response received:', error.request);
+      throw {
+        message: 'No response from server. Please check your internet connection.',
+        request: error.request
+      };
+    } else {
+      // Something happened in setting up the request that triggered an Error
+      console.error('Error setting up request:', error.message);
+      throw {
+        message: `Request error: ${error.message}`,
+        error: error
+      };
+    }
+  }
 };
 
 // Helper function to get image URL (handles both Cloudinary and local images)
