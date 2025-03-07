@@ -117,7 +117,47 @@ app.get('/api/health', (req, res) => {
     });
 });
 
-// Database status endpoint
+// Add a special debug endpoint that provides database connection details
+app.get('/api/debug-db', async (req, res) => {
+    // Set CORS headers to allow access from any origin
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    
+    // Generate a diagnostic report
+    try {
+        const diagnostics = {
+            timestamp: new Date().toISOString(),
+            environment: process.env.NODE_ENV || 'development',
+            node_version: process.version,
+            memory_usage: process.memoryUsage(),
+            uptime: process.uptime(),
+            // Include partial database info for security
+            database: {
+                uri_exists: !!process.env.MONGO_URI,
+                uri_format: process.env.MONGO_URI ? (process.env.MONGO_URI.startsWith('mongodb') ? 'valid' : 'invalid') : 'missing',
+                // Extract DB name without exposing credentials
+                dbName: process.env.MONGO_URI ? process.env.MONGO_URI.split('/').pop().split('?')[0] : 'unknown'
+            },
+            mongoose: {
+                readyState: mongoose.connection.readyState,
+                readyStateText: ['disconnected', 'connected', 'connecting', 'disconnecting'][mongoose.connection.readyState] || 'unknown',
+                host: mongoose.connection.host || 'not connected',
+                name: mongoose.connection.name || 'not connected'
+            }
+        };
+        
+        res.status(200).json(diagnostics);
+    } catch (error) {
+        console.error('Error generating diagnostics:', error);
+        res.status(500).json({ 
+            error: 'Error generating diagnostics',
+            message: error.message
+        });
+    }
+});
+
+// Database status endpoint with more detailed error information
 app.get('/api/db-status', async (req, res) => {
     console.log('DB status endpoint hit');
     
@@ -139,42 +179,68 @@ app.get('/api/db-status', async (req, res) => {
         console.log(`Current MongoDB connection state: ${statusMap[readyState]} (${readyState})`);
         
         if (readyState === 1) {
-            // Already connected
+            // Already connected - return success
             res.status(200).json({ 
                 status: 'connected', 
                 message: 'Database is connected',
                 dbName: mongoose.connection.name,
-                host: mongoose.connection.host
+                host: mongoose.connection.host,
+                serverTime: new Date().toISOString()
             });
         } else {
-            // Not connected, try to connect
+            // Not connected, try to connect explicitly
             console.log('Database is not connected, attempting to connect...');
-            const result = await connectDB();
             
-            if (result && result.error) {
-                // Connection failed
-                console.error('Database connection attempt failed:', result.error);
-                res.status(500).json({ 
+            // Connection isn't established, try to connect
+            const connectionResult = await connectDB();
+            
+            if (connectionResult && connectionResult.error) {
+                // Connection attempt failed with an error
+                console.error('Database connection attempt failed:', connectionResult.error);
+                
+                // Send detailed error for debugging
+                let errorDetails = 'Database connection error';
+                if (connectionResult.error.name) {
+                    errorDetails += ` (${connectionResult.error.name})`;
+                }
+                if (connectionResult.error.message) {
+                    errorDetails += `: ${connectionResult.error.message}`;
+                }
+                
+                return res.status(500).json({ 
                     status: 'error', 
                     message: 'Failed to connect to database', 
-                    details: process.env.NODE_ENV === 'production' ? 'Database connection error' : result.error.message 
+                    details: errorDetails,
+                    troubleshooting: [
+                        "Check if MongoDB Atlas IP whitelist includes 0.0.0.0/0",
+                        "Verify database credentials are correct",
+                        "Ensure the database name in the connection string is correct",
+                        "Check for network connectivity issues"
+                    ]
+                });
+            }
+            
+            // Check connection state again after connection attempt
+            const newState = mongoose.connection.readyState;
+            if (newState === 1) {
+                res.status(200).json({ 
+                    status: 'connected', 
+                    message: 'Database connection successful',
+                    dbName: mongoose.connection.name,
+                    host: mongoose.connection.host,
+                    serverTime: new Date().toISOString()
                 });
             } else {
-                // Check connection state again
-                const newState = mongoose.connection.readyState;
-                if (newState === 1) {
-                    res.status(200).json({ 
-                        status: 'connected', 
-                        message: 'Database connection successful',
-                        dbName: mongoose.connection.name,
-                        host: mongoose.connection.host
-                    });
-                } else {
-                    res.status(500).json({ 
-                        status: 'error', 
-                        message: `Database connection in state: ${statusMap[newState]} (${newState})` 
-                    });
-                }
+                res.status(500).json({ 
+                    status: 'error', 
+                    message: `Database connection in state: ${statusMap[newState]} (${newState})`,
+                    troubleshooting: [
+                        "Check if MongoDB Atlas IP whitelist includes 0.0.0.0/0",
+                        "Verify database credentials are correct",
+                        "Ensure the database name in the connection string is correct",
+                        "Check for network connectivity issues"
+                    ]
+                });
             }
         }
     } catch (error) {
@@ -182,7 +248,8 @@ app.get('/api/db-status', async (req, res) => {
         res.status(500).json({ 
             status: 'error', 
             message: 'Error checking database status', 
-            error: process.env.NODE_ENV === 'production' ? 'Internal server error' : error.message 
+            error: error.message,
+            stack: process.env.NODE_ENV === 'production' ? undefined : error.stack
         });
     }
 });
