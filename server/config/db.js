@@ -46,9 +46,7 @@ const connectDB = async () => {
       // Explicitly set for Atlas
       directConnection: false,
       // Important for serverless:
-      bufferCommands: false,           // Disable command buffering
-      // Not using autoReconnect in serverless environments
-      autoReconnect: false
+      bufferCommands: false           // Disable command buffering
     };
     
     console.log('Attempting mongoose.connect with serverless-optimized options...');
