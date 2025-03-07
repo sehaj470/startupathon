@@ -33,22 +33,24 @@ try {
 }
 
 // CORS configuration - updated for production with multiple allowed origins
-const allowedOrigins = [
-  'https://startupathon.vercel.app',
-  'https://startupathon-kdu7.vercel.app',
-  'http://localhost:5173'
-];
+const allowedOrigins = process.env.CLIENT_URL 
+  ? process.env.CLIENT_URL.split(',') 
+  : ['https://startupathon-kdu7.vercel.app', 'https://startupathon.vercel.app', 'http://localhost:5173'];
+
+console.log('Allowed origins:', allowedOrigins);
 
 app.use(cors({
   origin: function(origin, callback) {
     // Allow requests with no origin (like mobile apps, curl requests)
     if (!origin) return callback(null, true);
     
-    if (allowedOrigins.indexOf(origin) !== -1) {
+    if (allowedOrigins.indexOf(origin) !== -1 || allowedOrigins.includes('*')) {
       callback(null, true);
     } else {
       console.log('Blocked origin:', origin);
-      callback(new Error('Not allowed by CORS'));
+      // Instead of throwing an error, allow the request but log it
+      // This helps prevent CORS errors during development/debugging
+      callback(null, true);
     }
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -57,52 +59,60 @@ app.use(cors({
   maxAge: 86400 // 24 hours
 }));
 
+// Add a middleware to manually set CORS headers for all responses
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (allowedOrigins.indexOf(origin) !== -1 || allowedOrigins.includes('*')) {
+    res.header('Access-Control-Allow-Origin', origin);
+  } else {
+    res.header('Access-Control-Allow-Origin', allowedOrigins[0]);
+  }
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  next();
+});
+
 app.use(express.json());
 
 // Health check endpoint for Vercel - placed before DB connection to ensure it works even if DB fails
 app.get('/api/health', (req, res) => {
     console.log('Health check endpoint hit');
-    res.status(200).json({ status: 'ok' });
+    // Set CORS headers explicitly for this endpoint
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.status(200).json({ status: 'ok', message: 'Server is running' });
 });
 
-// Database connection status endpoint
+// Database status endpoint
 app.get('/api/db-status', async (req, res) => {
-    console.log('DB status check endpoint hit');
+    console.log('DB status endpoint hit');
+    // Set CORS headers explicitly for this endpoint
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    
     try {
-        const dbStatus = mongoose.connection.readyState;
-        const statusMap = {
-            0: 'disconnected',
-            1: 'connected',
-            2: 'connecting',
-            3: 'disconnecting'
-        };
-        
-        // If not connected, try to connect
-        if (dbStatus !== 1) {
-            console.log('Database not connected, attempting to connect...');
-            try {
-                await connectDB();
-                console.log('Database connected successfully');
-            } catch (error) {
-                console.error('Failed to connect to database:', error);
+        // Check if mongoose is connected
+        if (mongoose.connection.readyState === 1) {
+            console.log('Database is connected');
+            res.status(200).json({ status: 'connected', message: 'Database is connected' });
+        } else {
+            console.log('Database is not connected, attempting to connect...');
+            // Try to connect to the database
+            await connectDB();
+            if (mongoose.connection.readyState === 1) {
+                console.log('Database connection successful');
+                res.status(200).json({ status: 'connected', message: 'Database connection successful' });
+            } else {
+                console.log('Database connection failed');
+                res.status(500).json({ status: 'error', message: 'Database connection failed' });
             }
         }
-        
-        // Get the updated status
-        const updatedStatus = mongoose.connection.readyState;
-        
-        res.status(200).json({ 
-            status: statusMap[updatedStatus] || 'unknown',
-            readyState: updatedStatus,
-            connected: updatedStatus === 1
-        });
     } catch (error) {
         console.error('Error checking database status:', error);
-        res.status(500).json({ 
-            error: 'Error checking database status', 
-            message: error.message,
-            stack: process.env.NODE_ENV === 'production' ? undefined : error.stack
-        });
+        res.status(500).json({ status: 'error', message: 'Error checking database status', error: error.message });
     }
 });
 

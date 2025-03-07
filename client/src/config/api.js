@@ -58,8 +58,9 @@ export const apiRequest = async (method, url, data = null, config = {}) => {
         'Content-Type': 'application/json',
         'Accept': 'application/json'
       },
-      withCredentials: true, // Enable credentials for CORS
-      timeout: 30000
+      withCredentials: false, // Disable credentials for CORS
+      timeout: 30000,
+      mode: 'cors'
     };
     
     const mergedConfig = { ...defaultConfig, ...config };
@@ -71,19 +72,21 @@ export const apiRequest = async (method, url, data = null, config = {}) => {
     while (retries > 0) {
       try {
         let response;
+        const fullUrl = url.startsWith('http') ? url : `${normalizedApiUrl}${url}`;
+        
         if (method.toLowerCase() === 'get') {
-          response = await axios.get(url, mergedConfig);
+          response = await axios.get(fullUrl, mergedConfig);
         } else if (method.toLowerCase() === 'post') {
-          response = await axios.post(url, data, mergedConfig);
+          response = await axios.post(fullUrl, data, mergedConfig);
         } else if (method.toLowerCase() === 'put') {
-          response = await axios.put(url, data, mergedConfig);
+          response = await axios.put(fullUrl, data, mergedConfig);
         } else if (method.toLowerCase() === 'delete') {
-          response = await axios.delete(url, mergedConfig);
+          response = await axios.delete(fullUrl, mergedConfig);
         } else {
           throw new Error(`Unsupported method: ${method}`);
         }
         
-        console.log(`${method} request to ${url} successful:`, response.data);
+        console.log(`${method} request to ${fullUrl} successful:`, response.data);
         return response.data;
       } catch (error) {
         lastError = error;
