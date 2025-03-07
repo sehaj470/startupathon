@@ -45,8 +45,9 @@ const connectDB = async () => {
       heartbeatFrequencyMS: 30000,     // Longer heartbeat interval 
       // Explicitly set for Atlas
       directConnection: false,
-      // Important for serverless:
-      bufferCommands: false           // Disable command buffering
+      // For serverless functions, we'll allow buffering to ensure operations complete
+      bufferCommands: true,            // Allow command buffering to avoid timing issues
+      bufferMaxEntries: 0              // Disable buffering when connection is down
     };
     
     console.log('Attempting mongoose.connect with serverless-optimized options...');
