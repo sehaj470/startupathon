@@ -10,7 +10,7 @@ const { checkEnvVars } = require('./checkEnv');
 const challengeRoutes = require('./routes/admin/challengesRoutes');
 const founderRoutes = require('./routes/admin/foundersRoutes');
 const completerRoutes = require('./routes/admin/completersRoutes');
-const subscriberRoutes = require('./routes/admin/subscribersRoutes');
+const subscriberRoutes = require('./routes/admin/subscriberRoutes');
 const authRoutes = require('./routes/authRoutes');
 const publicChallenges = require('./routes/public/publicChallenges');
 const publicCompleters = require('./routes/public/publicCompleters');
@@ -224,8 +224,19 @@ app.use((req, res, next) => {
 
 // API routes with error handling
 const setupRoute = (path, router) => {
+    console.log(`Setting up route: ${path}`);
     try {
-        app.use(path, router);
+        // For admin routes, add auth middleware
+        if (path.includes('/admin')) {
+            const authMiddleware = express.Router();
+            authMiddleware.use(verifyToken);
+            authMiddleware.use(router);
+            app.use(path, authMiddleware);
+            console.log(`Admin route ${path} registered with auth middleware`);
+        } else {
+            app.use(path, router);
+            console.log(`Public route ${path} registered`);
+        }
     } catch (error) {
         console.error(`Error setting up route ${path}:`, error);
     }

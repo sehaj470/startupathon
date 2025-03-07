@@ -10,9 +10,19 @@ const {
   getCompleterById
 } = require('../../controllers/completersController');
 
-// Add debug middleware
+// Add CORS headers for admin routes
 router.use((req, res, next) => {
-  console.log('Completers route hit:', req.path);
+  res.header('Access-Control-Allow-Origin', 'https://startupathon-kdu7.vercel.app');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept');
+  
+  // Handle OPTIONS requests
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  
+  // Add debug middleware
+  console.log('Completers admin route hit:', req.method, req.path);
   next();
 });
 

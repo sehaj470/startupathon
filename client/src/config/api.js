@@ -31,7 +31,7 @@ export const API_ENDPOINTS = {
   HEALTH: '/api/health',
   DB_STATUS: '/api/db-status',
   
-  // Data endpoints
+  // Data endpoints (public - GET only)
   CHALLENGES: '/api/challenges',
   CHALLENGE: (id) => `/api/challenges/${id}`,
   COMPLETERS: '/api/completers',
@@ -41,10 +41,10 @@ export const API_ENDPOINTS = {
   USERS: '/api/users',
   USER: (id) => `/api/users/${id}`,
   
-  // Admin endpoints - using the same routes but with admin middleware
-  ADMIN_CHALLENGES: '/api/challenges',
-  ADMIN_COMPLETERS: '/api/completers', 
-  ADMIN_SUBSCRIBERS: '/api/subscribers'
+  // Admin endpoints (for CRUD operations)
+  ADMIN_CHALLENGES: '/api/admin/challenges',
+  ADMIN_COMPLETERS: '/api/admin/completers', 
+  ADMIN_SUBSCRIBERS: '/api/admin/subscribers'
 };
 
 // Helper function to get auth config for protected routes
