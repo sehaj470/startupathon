@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { API_ENDPOINTS, getAuthConfig } from '../../config/api';
+import { API_ENDPOINTS, apiRequest } from '../../config/api';
 
 const SubscribersAdmin = () => {
   const navigate = useNavigate();
@@ -17,21 +16,30 @@ const SubscribersAdmin = () => {
   const fetchSubscribers = async (page = 1, search = '') => {
     try {
       setLoading(true);
-      console.log('Fetching subscribers from:', `${API_ENDPOINTS.ADMIN_SUBSCRIBERS}?page=${page}&search=${search}`);
-      const res = await axios.get(
-        `${API_ENDPOINTS.ADMIN_SUBSCRIBERS}?page=${page}&search=${search}`,
-        getAuthConfig()
-      );
-      console.log('Subscribers data received:', res.data);
-      setSubscribers(res.data.subscribers);
-      setTotalPages(res.data.totalPages);
       setError('');
+      console.log('Fetching subscribers from:', `${API_ENDPOINTS.ADMIN_SUBSCRIBERS}?page=${page}&search=${search}`);
+      
+      // Use apiRequest instead of axios
+      const data = await apiRequest('get', `${API_ENDPOINTS.ADMIN_SUBSCRIBERS}?page=${page}&search=${search}`);
+      
+      console.log('Subscribers data received:', data);
+      if (data.subscribers && Array.isArray(data.subscribers)) {
+        setSubscribers(data.subscribers);
+        setTotalPages(data.totalPages || 1);
+      } else if (Array.isArray(data)) {
+        // Handle case where API just returns an array of subscribers
+        setSubscribers(data);
+        setTotalPages(1);
+      } else {
+        console.error('Unexpected data format:', data);
+        setError('Received invalid data format from server');
+      }
     } catch (err) {
       console.error('Error fetching subscribers:', err);
-      if (err.response?.status === 401) {
+      setError(err.message || 'Failed to fetch subscribers');
+      if (err.status === 401) {
         navigate('/admin/login');
       }
-      setError('Failed to fetch subscribers');
     } finally {
       setLoading(false);
     }
@@ -50,13 +58,9 @@ const SubscribersAdmin = () => {
     e.preventDefault();
     try {
       console.log('Adding new subscriber:', formData.email);
-      const res = await axios.post(
-        API_ENDPOINTS.ADMIN_SUBSCRIBERS,
-        formData,
-        getAuthConfig()
-      );
-      console.log('Subscriber added:', res.data);
-      setSubscribers([...subscribers, res.data]);
+      const res = await apiRequest('post', API_ENDPOINTS.ADMIN_SUBSCRIBERS, formData);
+      console.log('Subscriber added:', res);
+      setSubscribers([...subscribers, res]);
       setFormData({ email: '' });
       setShowAddForm(false);
     } catch (err) {
@@ -69,10 +73,7 @@ const SubscribersAdmin = () => {
     if (window.confirm('Are you sure you want to delete this subscriber?')) {
       try {
         console.log('Deleting subscriber with ID:', id);
-        await axios.delete(
-          `${API_ENDPOINTS.ADMIN_SUBSCRIBERS}/${id}`,
-          getAuthConfig()
-        );
+        await apiRequest('delete', `${API_ENDPOINTS.ADMIN_SUBSCRIBERS}/${id}`);
         console.log('Subscriber deleted successfully');
         fetchSubscribers(currentPage, searchTerm);
       } catch (err) {

@@ -230,15 +230,20 @@ const setupRoute = (path, router) => {
     }
 };
 
-setupRoute('/api/auth', authRoutes);
-setupRoute('/api/admin/challenges', challengeRoutes);
-setupRoute('/api/admin/founders', founderRoutes);
-setupRoute('/api/admin/completers', completerRoutes);
-setupRoute('/api/admin/subscribers', subscriberRoutes);
-setupRoute('/api/subscribers', publicSubscribers);
+// Public routes
+setupRoute('/api/health', healthRoutes);
+setupRoute('/api/db-status', dbStatusRoutes);
 setupRoute('/api/challenges', publicChallenges);
 setupRoute('/api/completers', publicCompleters);
+setupRoute('/api/subscribers', publicSubscribers);
+setupRoute('/api/auth', authRoutes);
 setupRoute('/api/diagnostics', diagnosticsRoutes);
+
+// Admin routes with auth middleware
+// setupRoute('/api/admin/challenges', challengeRoutes);
+// setupRoute('/api/admin/founders', founderRoutes);
+// setupRoute('/api/admin/completers', completerRoutes);
+// setupRoute('/api/admin/subscribers', subscriberRoutes);
 
 // 404 handler
 app.use((req, res, next) => {

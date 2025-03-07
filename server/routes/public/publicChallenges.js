@@ -18,7 +18,12 @@ router.use((req, res, next) => {
 // GET all challenges
 router.get('/', async (req, res) => {
   try {
+    console.log('Fetching challenges from database...');
     const challenges = await Challenge.find().sort({ createdAt: -1 });
+    console.log(`Found ${challenges.length} challenges`);
+    
+    // Set content type explicitly to ensure JSON response
+    res.setHeader('Content-Type', 'application/json');
     res.status(200).json(challenges);
   } catch (error) {
     console.error('Error fetching challenges:', error);

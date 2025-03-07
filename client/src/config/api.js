@@ -36,13 +36,15 @@ export const API_ENDPOINTS = {
   CHALLENGE: (id) => `/api/challenges/${id}`,
   COMPLETERS: '/api/completers',
   COMPLETER: (id) => `/api/completers/${id}`,
-  SUBSCRIBSERS: '/api/subscribers',
+  SUBSCRIBERS: '/api/subscribers',
   FOUNDERS: '/api/founders',
   USERS: '/api/users',
   USER: (id) => `/api/users/${id}`,
   
-  // Admin actions
-  UPLOAD: '/api/upload'
+  // Admin endpoints - using the same routes but with admin middleware
+  ADMIN_CHALLENGES: '/api/challenges',
+  ADMIN_COMPLETERS: '/api/completers', 
+  ADMIN_SUBSCRIBERS: '/api/subscribers'
 };
 
 // Helper function to get auth config for protected routes
@@ -110,6 +112,14 @@ export const apiRequest = async (method, url, data = null, config = {}) => {
           throw new Error(`Unsupported method: ${method}`);
         }
         
+        // Check if the response is HTML instead of JSON
+        if (response.headers && 
+            response.headers['content-type'] && 
+            response.headers['content-type'].includes('text/html')) {
+          console.error('Received HTML response instead of JSON:', response.data);
+          throw new Error('Received HTML response from server. API endpoint may be misconfigured.');
+        }
+        
         console.log(`${method} request to ${fullUrl} successful:`, response.data);
         return response.data;
       } catch (error) {
@@ -149,6 +159,14 @@ export const apiRequest = async (method, url, data = null, config = {}) => {
     console.error(`Error in ${method} request to ${url}:`, error);
     
     if (error.response) {
+      // Handle HTML responses from server
+      if (error.response.headers && 
+          error.response.headers['content-type'] && 
+          error.response.headers['content-type'].includes('text/html')) {
+        console.error('Server returned HTML instead of JSON:', error.response.data);
+        throw new Error('Server returned HTML instead of JSON. API endpoint may be misconfigured.');
+      }
+      
       // The request was made and the server responded with a status code
       // that falls out of the range of 2xx
       console.error('Error response:', {

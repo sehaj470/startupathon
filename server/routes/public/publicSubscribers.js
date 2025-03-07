@@ -18,7 +18,12 @@ router.use((req, res, next) => {
 // GET all subscribers
 router.get('/', async (req, res) => {
   try {
+    console.log('Fetching subscribers from database...');
     const subscribers = await Subscriber.find().sort({ createdAt: -1 });
+    console.log(`Found ${subscribers.length} subscribers`);
+    
+    // Set content type explicitly to ensure JSON response
+    res.setHeader('Content-Type', 'application/json');
     res.status(200).json(subscribers);
   } catch (error) {
     console.error('Error fetching subscribers:', error);

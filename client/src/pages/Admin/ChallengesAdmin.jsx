@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { API_ENDPOINTS, apiRequest } from '../../config/api';
 
 const getImageUrl = (imagePath) => {
   if (!imagePath) return 'https://via.placeholder.com/80';
-  return `http://localhost:5000/uploads/challenges/${imagePath}`;
+  // Use the normalized API URL from config instead of hardcoded URL
+  const baseUrl = process.env.REACT_APP_API_URL || 'https://startupathon.vercel.app';
+  return `${baseUrl}/uploads/challenges/${imagePath}`;
 };
 
 const ChallengesAdmin = () => {
@@ -20,7 +22,8 @@ const ChallengesAdmin = () => {
   });
   const [imageFile, setImageFile] = useState(null);
   const [showAddForm, setShowAddForm] = useState(false);
-
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -29,38 +32,33 @@ const ChallengesAdmin = () => {
     } else {
       navigate('/admin/login');
     }
-  }, []); // Remove token from dependency array
-
-  const getAuthConfig = () => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      navigate('/admin/login');
-      throw new Error('No token found');
-    }
-    return {
-      headers: {
-        Authorization: `Bearer ${token}`, // Add Bearer prefix here
-        'Content-Type': 'application/json'
-      }
-    };
-  };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchChallenges = async () => {
     try {
+      setLoading(true);
+      setError(null);
       console.log('Fetching challenges...');
-      const res = await axios.get(
-        'http://localhost:5000/api/admin/challenges',
-        getAuthConfig()
-      );
-      console.log('Challenges response:', res.data);
-      setChallenges(res.data);
+      
+      // Use the apiRequest function instead of axios directly
+      const data = await apiRequest('get', API_ENDPOINTS.ADMIN_CHALLENGES);
+      
+      console.log('Challenges response:', data);
+      if (Array.isArray(data)) {
+        setChallenges(data);
+      } else {
+        console.error('Unexpected data format:', data);
+        setError('Received invalid data format from server');
+      }
     } catch (err) {
-      if (err.response?.status === 401) {
+      console.error('Error fetching challenges:', err);
+      setError(err.message || 'Error fetching challenges');
+      if (err.status === 401) {
         localStorage.removeItem('token');
         navigate('/admin/login');
       }
-      console.error('Error details:', err);
-      alert('Failed to fetch challenges: ' + err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -95,28 +93,19 @@ const ChallengesAdmin = () => {
       });
   
       const config = {
-        ...getAuthConfig(),
         headers: {
-          ...getAuthConfig().headers,
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
           'Content-Type': 'multipart/form-data'
         }
       };
   
       let res;
       if (editingId) {
-        res = await axios.put(
-          `http://localhost:5000/api/admin/challenges/${editingId}`,
-          formDataToSend,
-          config
-        );
+        res = await apiRequest('put', `${API_ENDPOINTS.ADMIN_CHALLENGES}/${editingId}`, formDataToSend, config);
         // Update challenges array with edited challenge
         setChallenges(challenges.map(ch => ch._id === editingId ? res.data : ch));
       } else {
-        res = await axios.post(
-          'http://localhost:5000/api/admin/challenges',
-          formDataToSend,
-          config
-        );
+        res = await apiRequest('post', API_ENDPOINTS.ADMIN_CHALLENGES, formDataToSend, config);
         setChallenges([...challenges, res.data]);
       }
       
@@ -137,14 +126,11 @@ const ChallengesAdmin = () => {
           }
         };
   
-        await axios.delete(
-          `http://localhost:5000/api/admin/challenges/${id}`,
-          config
-        );
+        await apiRequest('delete', `${API_ENDPOINTS.ADMIN_CHALLENGES}/${id}`, null, config);
         setChallenges(challenges.filter((ch) => ch._id !== id));
       } catch (err) {
         console.error('Error deleting challenge:', err);
-        if (err.response?.status === 401) {
+        if (err.status === 401) {
           localStorage.removeItem('token');
           navigate('/admin/login');
         }

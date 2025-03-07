@@ -18,7 +18,12 @@ router.use((req, res, next) => {
 // GET all completers
 router.get('/', async (req, res) => {
   try {
+    console.log('Fetching completers from database...');
     const completers = await Completer.find().sort({ createdAt: -1 });
+    console.log(`Found ${completers.length} completers`);
+    
+    // Set content type explicitly to ensure JSON response
+    res.setHeader('Content-Type', 'application/json');
     res.status(200).json(completers);
   } catch (error) {
     console.error('Error fetching completers:', error);

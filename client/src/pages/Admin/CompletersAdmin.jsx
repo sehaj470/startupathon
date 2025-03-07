@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { API_ENDPOINTS, getAuthConfig, validateFileUpload } from '../../config/api';
+import { API_ENDPOINTS, apiRequest, getAuthConfig, validateFileUpload } from '../../config/api';
 
 const getImageUrl = (imagePath) => {
   if (!imagePath) return 'https://via.placeholder.com/80';
@@ -11,9 +10,8 @@ const getImageUrl = (imagePath) => {
     return imagePath;
   }
   
-  // Extract the base URL from the API_ENDPOINTS
-  const baseUrl = API_ENDPOINTS.ADMIN_COMPLETERS.split('/api')[0];
-  // Fallback for local development
+  // Use the normalized API URL from config
+  const baseUrl = process.env.REACT_APP_API_URL || 'https://startupathon.vercel.app';
   return `${baseUrl}/uploads/completers/${imagePath}`;
 };
 
@@ -43,25 +41,31 @@ const CompletersAdmin = () => {
     } else {
       navigate('/admin/login');
     }
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const fetchCompleters = async () => {
     try {
       setIsLoading(true);
+      setError('');
       console.log('Fetching completers...');
-      const res = await axios.get(
-        API_ENDPOINTS.ADMIN_COMPLETERS,
-        getAuthConfig()
-      );
-      console.log('Completers response:', res.data);
-      setCompleters(res.data);
+      
+      // Use apiRequest instead of axios
+      const data = await apiRequest('get', API_ENDPOINTS.ADMIN_COMPLETERS);
+      
+      console.log('Completers response:', data);
+      if (Array.isArray(data)) {
+        setCompleters(data);
+      } else {
+        console.error('Unexpected data format:', data);
+        setError('Received invalid data format from server');
+      }
     } catch (err) {
-      if (err.response?.status === 401) {
+      console.error('Error fetching completers:', err);
+      setError(err.message || 'Error fetching completers');
+      if (err.status === 401) {
         localStorage.removeItem('token');
         navigate('/admin/login');
       }
-      console.error('Error details:', err);
-      setError('Failed to fetch completers: ' + (err.response?.data?.error || err.message));
     } finally {
       setIsLoading(false);
     }
@@ -70,14 +74,11 @@ const CompletersAdmin = () => {
   const fetchCompleterById = async (id) => {
     try {
       setIsLoading(true);
-      const res = await axios.get(
-        `${API_ENDPOINTS.ADMIN_COMPLETERS}/${id}`,
-        getAuthConfig()
-      );
+      const res = await apiRequest('get', `${API_ENDPOINTS.ADMIN_COMPLETERS}/${id}`);
       return res.data;
     } catch (err) {
       console.error('Error fetching completer:', err);
-      if (err.response?.status === 401) {
+      if (err.status === 401) {
         navigate('/admin/login');
       }
       setError('Failed to fetch completer: ' + (err.response?.data?.error || err.message));
@@ -134,19 +135,11 @@ const CompletersAdmin = () => {
       let res;
       if (editingId) {
         // Update existing completer
-        res = await axios.put(
-          `${API_ENDPOINTS.ADMIN_COMPLETERS}/${editingId}`,
-          formDataToSend,
-          config
-        );
+        res = await apiRequest('put', `${API_ENDPOINTS.ADMIN_COMPLETERS}/${editingId}`, formDataToSend, config);
         setCompleters(completers.map(comp => comp._id === editingId ? res.data : comp));
       } else {
         // Create new completer
-        res = await axios.post(
-          API_ENDPOINTS.ADMIN_COMPLETERS,
-          formDataToSend,
-          config
-        );
+        res = await apiRequest('post', API_ENDPOINTS.ADMIN_COMPLETERS, formDataToSend, config);
         setCompleters([...completers, res.data]);
       }
       
@@ -164,16 +157,13 @@ const CompletersAdmin = () => {
     if (window.confirm('Are you sure you want to delete this completer?')) {
       try {
         setIsLoading(true);
-        await axios.delete(
-          `${API_ENDPOINTS.ADMIN_COMPLETERS}/${id}`,
-          getAuthConfig()
-        );
+        await apiRequest('delete', `${API_ENDPOINTS.ADMIN_COMPLETERS}/${id}`, getAuthConfig());
         
         // Update the state after successful deletion
         setCompleters(completers.filter(comp => comp._id !== id));
       } catch (err) {
         console.error('Delete error details:', err);
-        if (err.response?.status === 401) {
+        if (err.status === 401) {
           localStorage.removeItem('token');
           navigate('/admin/login');
         }
