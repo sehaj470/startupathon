@@ -8,6 +8,8 @@ const currentDomain = typeof window !== 'undefined' ? window.location.hostname :
 let apiUrl = API_URL;
 if (currentDomain.includes('startupathon-kdu7.vercel.app')) {
   apiUrl = 'https://startupathon.vercel.app';
+} else if (currentDomain.includes('startupathon.vercel.app')) {
+  apiUrl = 'https://startupathon.vercel.app';
 }
 
 // Remove trailing slash if present
@@ -56,33 +58,51 @@ export const apiRequest = async (method, url, data = null, config = {}) => {
         'Content-Type': 'application/json',
         'Accept': 'application/json'
       },
-      withCredentials: false,
+      withCredentials: true, // Enable credentials for CORS
       timeout: 30000
     };
     
     const mergedConfig = { ...defaultConfig, ...config };
     
-    let response;
-    if (method.toLowerCase() === 'get') {
-      response = await axios.get(url, mergedConfig);
-    } else if (method.toLowerCase() === 'post') {
-      response = await axios.post(url, data, mergedConfig);
-    } else if (method.toLowerCase() === 'put') {
-      response = await axios.put(url, data, mergedConfig);
-    } else if (method.toLowerCase() === 'delete') {
-      response = await axios.delete(url, mergedConfig);
-    } else {
-      throw new Error(`Unsupported method: ${method}`);
+    // Add retry logic
+    let retries = 3;
+    let lastError;
+    
+    while (retries > 0) {
+      try {
+        let response;
+        if (method.toLowerCase() === 'get') {
+          response = await axios.get(url, mergedConfig);
+        } else if (method.toLowerCase() === 'post') {
+          response = await axios.post(url, data, mergedConfig);
+        } else if (method.toLowerCase() === 'put') {
+          response = await axios.put(url, data, mergedConfig);
+        } else if (method.toLowerCase() === 'delete') {
+          response = await axios.delete(url, mergedConfig);
+        } else {
+          throw new Error(`Unsupported method: ${method}`);
+        }
+        
+        console.log(`${method} request to ${url} successful:`, response.data);
+        return response.data;
+      } catch (error) {
+        lastError = error;
+        if (error.response && error.response.status !== 500) {
+          throw error; // Don't retry if it's not a server error
+        }
+        retries--;
+        if (retries > 0) {
+          await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before retrying
+          console.log(`Retrying request to ${url}, ${retries} attempts remaining`);
+        }
+      }
     }
     
-    console.log(`${method} request to ${url} successful:`, response.data);
-    return response.data;
+    throw lastError;
   } catch (error) {
     console.error(`Error in ${method} request to ${url}:`, error);
     
     if (error.response) {
-      // The request was made and the server responded with a status code
-      // that falls out of the range of 2xx
       console.error('Error response:', {
         status: error.response.status,
         data: error.response.data
@@ -93,14 +113,12 @@ export const apiRequest = async (method, url, data = null, config = {}) => {
         data: error.response.data
       };
     } else if (error.request) {
-      // The request was made but no response was received
       console.error('No response received:', error.request);
       throw {
         message: 'No response from server. Please check your internet connection.',
         request: error.request
       };
     } else {
-      // Something happened in setting up the request that triggered an Error
       console.error('Error setting up request:', error.message);
       throw {
         message: `Request error: ${error.message}`,
