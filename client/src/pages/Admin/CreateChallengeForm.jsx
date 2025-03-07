@@ -1,6 +1,7 @@
 // client/src/pages/Admin/CreateChallengeForm.jsx
 import React, { useState } from 'react';
 import axios from 'axios';
+import { API_ENDPOINTS, getAuthConfig, validateFileUpload } from '../../config/api';
 
 const CreateChallengeForm = ({ onChallengeCreated }) => {
   const [title, setTitle] = useState('');
@@ -9,15 +10,29 @@ const CreateChallengeForm = ({ onChallengeCreated }) => {
   const [description, setDescription] = useState('');
   const [visible, setVisible] = useState(true);
   const [imageFile, setImageFile] = useState(null);
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   
-  const token = localStorage.getItem('token');
-
   const handleFileChange = (e) => {
-    setImageFile(e.target.files[0]);
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    // Validate file type and size
+    const validation = validateFileUpload(file);
+    if (!validation.valid) {
+      setError(validation.error);
+      e.target.value = ''; // Clear the file input
+      return;
+    }
+    
+    setError(''); // Clear any previous errors
+    setImageFile(file);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+    setIsLoading(true);
 
     const formData = new FormData();
     formData.append('title', title);
@@ -32,13 +47,9 @@ const CreateChallengeForm = ({ onChallengeCreated }) => {
     }
 
     try {
-      // const newChallenge = { title, funding, deadline, description, visible };
-      const res = await axios.post('http://localhost:5000/api/admin/challenges', formData, {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        }
-      });
+      const config = getAuthConfig('multipart/form-data');
+      const res = await axios.post(API_ENDPOINTS.ADMIN_CHALLENGES, formData, config);
+      
       // Clear form fields after success
       setTitle('');
       setFunding('');
@@ -46,17 +57,27 @@ const CreateChallengeForm = ({ onChallengeCreated }) => {
       setDescription('');
       setVisible(true);
       setImageFile(null);
+      
       // Pass the new challenge back to parent component
       onChallengeCreated(res.data);
     } catch (err) {
-      console.error(err);
-      alert('Failed to create challenge.');
+      console.error('Error creating challenge:', err);
+      setError(err.response?.data?.error || 'Failed to create challenge. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
     <form onSubmit={handleSubmit} style={{ border: '1px solid #ccc', padding: '1rem', margin: '1rem 0' }}>
       <h3>Create New Challenge</h3>
+      
+      {error && (
+        <div style={{ color: 'red', margin: '10px 0' }}>
+          {error}
+        </div>
+      )}
+      
       <div>
         <label>Title: </label>
         <input 
@@ -101,7 +122,7 @@ const CreateChallengeForm = ({ onChallengeCreated }) => {
         />
       </div>
 
-      {/* New file input for uploading an image */}
+      {/* File input with validation */}
       <div>
         <label>Upload Image: </label>
         <input 
@@ -109,8 +130,18 @@ const CreateChallengeForm = ({ onChallengeCreated }) => {
           accept="image/*"
           onChange={handleFileChange}
         />
+        <small style={{ display: 'block', marginTop: '5px' }}>
+          Only image files, max 3MB
+        </small>
       </div>
-      <button type="submit">Create Challenge</button>
+      
+      <button 
+        type="submit" 
+        disabled={isLoading}
+        style={{ opacity: isLoading ? 0.7 : 1 }}
+      >
+        {isLoading ? 'Creating...' : 'Create Challenge'}
+      </button>
     </form>
   );
 };

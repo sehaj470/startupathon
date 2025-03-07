@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { API_ENDPOINTS } from '../../config/api';
 
 const Banner = ({
   titleText,
@@ -9,6 +10,7 @@ const Banner = ({
 }) => {
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState({ type: '', text: '' });
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubscribe = async (e) => {
     e.preventDefault();
@@ -22,7 +24,8 @@ const Banner = ({
         return;
       }
   
-      const res = await axios.post('http://localhost:5000/api/subscribers', { email });
+      setIsLoading(true);
+      const res = await axios.post(API_ENDPOINTS.SUBSCRIBERS, { email });
       setMessage({ 
         type: 'success', 
         text: 'Successfully subscribed! Thank you for joining us.' 
@@ -34,6 +37,8 @@ const Banner = ({
         type: 'error', 
         text: err.response?.data?.error || 'Failed to subscribe. Please try again.' 
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -56,14 +61,12 @@ const Banner = ({
 
         {!inputPlaceholder &&  buttonText && (
           <form className="flex flex-col md:flex-row items-center justify-center gap-4 max-w-xl mx-auto">
-            
-
             <button
-            type="submit"
-          className="bg-[#7F5ED5] text-white rounded-md px-4 py-2 apply-fellowship-btn transition-colors duration-200 hover:bg-[#855DEF] h-[48px] flex items-center justify-center"
-        >
-          {buttonText}
-        </button>
+              type="submit"
+              className="bg-[#7F5ED5] text-white rounded-md px-4 py-2 apply-fellowship-btn transition-colors duration-200 hover:bg-[#855DEF] h-[48px] flex items-center justify-center"
+            >
+              {buttonText}
+            </button>
           </form>
         )}
         
@@ -76,14 +79,16 @@ const Banner = ({
               placeholder={inputPlaceholder}
               className="flex-1 px-4 py-2 rounded-md border border-gray-300 text-white bg-transparent focus:outline-none focus:ring-2 focus:ring-purple-600"
               required
+              disabled={isLoading}
             />
 
             <button
-            type="submit"
-          className="bg-[#7F5ED5] text-white rounded-md px-4 py-2 apply-fellowship-btn transition-colors duration-200 hover:bg-[#855DEF] h-[48px] flex items-center justify-center"
-        >
-          {buttonText}
-        </button>
+              type="submit"
+              className="bg-[#7F5ED5] text-white rounded-md px-4 py-2 apply-fellowship-btn transition-colors duration-200 hover:bg-[#855DEF] h-[48px] flex items-center justify-center"
+              disabled={isLoading}
+            >
+              {isLoading ? 'Subscribing...' : buttonText}
+            </button>
           </form>
         )}
 

@@ -1,10 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { API_ENDPOINTS, getAuthConfig, validateFileUpload } from '../../config/api';
 
 const getImageUrl = (imagePath) => {
   if (!imagePath) return 'https://via.placeholder.com/80';
-  return `http://localhost:5000/uploads/completers/${imagePath}`;
+  
+  // Check if the image path is already a full URL (Cloudinary)
+  if (imagePath.startsWith('http')) {
+    return imagePath;
+  }
+  
+  // Extract the base URL from the API_ENDPOINTS
+  const baseUrl = API_ENDPOINTS.ADMIN_COMPLETERS.split('/api')[0];
+  // Fallback for local development
+  return `${baseUrl}/uploads/completers/${imagePath}`;
 };
 
 const CompletersAdmin = () => {
@@ -13,7 +23,9 @@ const CompletersAdmin = () => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [imageFile, setImageFile] = useState(null);
-  const token = localStorage.getItem('token');
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  
   const [formData, setFormData] = useState({
     projectName: '',
     profile: '',
@@ -24,20 +36,6 @@ const CompletersAdmin = () => {
     visible: true
   });
 
-  const getAuthConfig = () => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      navigate('/admin/login');
-      throw new Error('No token found');
-    }
-    return {
-      headers: {
-        Authorization: `Bearer ${token}`, // Add Bearer prefix here
-        'Content-Type': 'application/json'
-      }
-    };
-  };
-
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
@@ -45,13 +43,14 @@ const CompletersAdmin = () => {
     } else {
       navigate('/admin/login');
     }
-  }, []); // Remove token dependency
+  }, []);
 
   const fetchCompleters = async () => {
     try {
+      setIsLoading(true);
       console.log('Fetching completers...');
       const res = await axios.get(
-        'http://localhost:5000/api/admin/completers',
+        API_ENDPOINTS.ADMIN_COMPLETERS,
         getAuthConfig()
       );
       console.log('Completers response:', res.data);
@@ -62,14 +61,17 @@ const CompletersAdmin = () => {
         navigate('/admin/login');
       }
       console.error('Error details:', err);
-      alert('Failed to fetch completers: ' + err.message);
+      setError('Failed to fetch completers: ' + (err.response?.data?.error || err.message));
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const fetchCompleterById = async (id) => {
     try {
+      setIsLoading(true);
       const res = await axios.get(
-        `http://localhost:5000/api/admin/completers/${id}`,
+        `${API_ENDPOINTS.ADMIN_COMPLETERS}/${id}`,
         getAuthConfig()
       );
       return res.data;
@@ -78,18 +80,34 @@ const CompletersAdmin = () => {
       if (err.response?.status === 401) {
         navigate('/admin/login');
       }
+      setError('Failed to fetch completer: ' + (err.response?.data?.error || err.message));
       return null;
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleImageChange = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      setImageFile(e.target.files[0]);
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    // Validate file type and size
+    const validation = validateFileUpload(file);
+    if (!validation.valid) {
+      setError(validation.error);
+      e.target.value = ''; // Clear the file input
+      return;
     }
+    
+    setError(''); // Clear any previous errors
+    setImageFile(file);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+    setIsLoading(true);
+    
     try {
       const formDataToSend = new FormData();
       
@@ -105,25 +123,19 @@ const CompletersAdmin = () => {
         formDataToSend.append('profilePicture', imageFile);
       }
 
-            // Log the form data being sent
+      // Log the form data being sent
       console.log('Form data being sent:', {
         ...Object.fromEntries(formDataToSend),
         visible: formData.visible
       });
   
-      const config = {
-        ...getAuthConfig(),
-        headers: {
-          ...getAuthConfig().headers,
-          'Content-Type': 'multipart/form-data'
-        }
-      };
+      const config = getAuthConfig('multipart/form-data');
   
       let res;
       if (editingId) {
         // Update existing completer
         res = await axios.put(
-          `http://localhost:5000/api/admin/completers/${editingId}`,
+          `${API_ENDPOINTS.ADMIN_COMPLETERS}/${editingId}`,
           formDataToSend,
           config
         );
@@ -131,7 +143,7 @@ const CompletersAdmin = () => {
       } else {
         // Create new completer
         res = await axios.post(
-          'http://localhost:5000/api/admin/completers',
+          API_ENDPOINTS.ADMIN_COMPLETERS,
           formDataToSend,
           config
         );
@@ -142,22 +154,19 @@ const CompletersAdmin = () => {
       resetForm();
     } catch (err) {
       console.error('Submit error details:', err);
-      alert(`Failed to ${editingId ? 'update' : 'submit'} completer: ${err.message}`);
+      setError(`Failed to ${editingId ? 'update' : 'submit'} completer: ${err.response?.data?.error || err.message}`);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this completer?')) {
       try {
-        const config = {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`
-          }
-        };
-  
+        setIsLoading(true);
         await axios.delete(
-          `http://localhost:5000/api/admin/completers/${id}`,
-          config
+          `${API_ENDPOINTS.ADMIN_COMPLETERS}/${id}`,
+          getAuthConfig()
         );
         
         // Update the state after successful deletion
@@ -168,7 +177,9 @@ const CompletersAdmin = () => {
           localStorage.removeItem('token');
           navigate('/admin/login');
         }
-        alert('Failed to delete completer: ' + err.message);
+        setError('Failed to delete completer: ' + (err.response?.data?.error || err.message));
+      } finally {
+        setIsLoading(false);
       }
     }
   };
@@ -186,6 +197,7 @@ const CompletersAdmin = () => {
     setImageFile(null);
     setEditingId(null);
     setShowAddForm(false);
+    setError('');
   };
 
   return (
@@ -200,6 +212,13 @@ const CompletersAdmin = () => {
           {showAddForm ? 'Cancel' : 'Add New Completer'}
         </button>
       </div>
+
+      {/* Display errors */}
+      {error && (
+        <div className="bg-red-500 text-white p-3 rounded mb-4">
+          {error}
+        </div>
+      )}
 
       {/* Add/Edit Form */}
       {showAddForm && (
@@ -261,16 +280,17 @@ const CompletersAdmin = () => {
             </div>
 
             <div>
-              <label className="block mb-2">Profile Picture</label>
+              <label className="block mb-2">Visible</label>
               <input
-                type="file"
-                accept="image/*"
-                onChange={handleImageChange}
-                className="w-full p-2 rounded bg-gray-800"
+                type="checkbox"
+                checked={formData.visible}
+                onChange={(e) => setFormData({...formData, visible: e.target.checked})}
+                className="mr-2"
               />
+              <span>Show on website</span>
             </div>
 
-            <div className="col-span-2">
+            <div className="md:col-span-2">
               <label className="block mb-2">Description</label>
               <textarea
                 value={formData.description}
@@ -281,91 +301,100 @@ const CompletersAdmin = () => {
             </div>
 
             <div>
-              <label className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  checked={formData.visible}
-                  onChange={(e) => setFormData({...formData, visible: e.target.checked})}
-                  className="rounded"
-                />
-                <span>Visible</span>
-              </label>
+              <label className="block mb-2">Profile Picture</label>
+              <input
+                type="file"
+                onChange={handleImageChange}
+                className="w-full p-2"
+                accept="image/*"
+              />
+              <small className="text-gray-400 block mt-1">
+                Only image files, max 3MB
+              </small>
             </div>
           </div>
 
-          <button
-            type="submit"
-            className="mt-4 bg-[#7F5ED5] text-white px-4 py-2 rounded hover:bg-[#855DEF]"
-          >
-            {editingId ? 'Update' : 'Add'} Completer
-          </button>
+          <div className="mt-6 flex justify-end">
+            <button
+              type="button"
+              onClick={resetForm}
+              className="bg-gray-600 text-white px-4 py-2 rounded mr-2"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="bg-[#7F5ED5] text-white px-4 py-2 rounded hover:bg-[#855DEF] transition-colors"
+              disabled={isLoading}
+            >
+              {isLoading ? 'Saving...' : (editingId ? 'Update Completer' : 'Add Completer')}
+            </button>
+          </div>
         </form>
       )}
 
       {/* Completers List */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {completers.map(completer => (
-          <div key={completer._id} className="bg-[#1c0c2e] p-6 rounded-lg">
-            <div className="flex items-center mb-4">
-              {completer.profilePicture && (
-                <img
-                src={getImageUrl(completer.profilePicture)}
-                alt={completer.profile}
-                className="w-16 h-16 rounded-full object-cover mr-4"
-                onError={(e) => {
-                  e.target.onerror = null;
-                  e.target.src = 'https://via.placeholder.com/80';
-                }}
-              />
-              )}
-              <div>
-                <h3 className="text-xl font-bold">{completer.projectName}</h3>
-                <p className="text-gray-300">{completer.position}</p>
-              </div>
-            </div>
-
-            <p className="text-gray-300 mb-4 line-clamp-3">{completer.description}</p>
-            
-            <div className="flex justify-between items-center mb-4">
-              <p className="text-sm text-gray-400">
-                Funding: {completer.funding}
-              </p>
-              <span className={`px-2 py-1 rounded text-sm ${completer.visible ? 'bg-green-600' : 'bg-red-600'}`}>
-                {completer.visible ? 'Visible' : 'Hidden'}
-              </span>
-            </div>
-
-            <div className="flex justify-end space-x-2">
-            <button
-              onClick={async () => {
-                const completerData = await fetchCompleterById(completer._id);
-                if (completerData) {
-                  setEditingId(completer._id);
-                  setFormData({
-                    projectName: completerData.projectName,
-                    profile: completerData.profile,
-                    position: completerData.position,
-                    description: completerData.description,
-                    funding: completerData.funding,
-                    linkedinUrl: completerData.linkedinUrl,
-                    visible: Boolean(completerData.visible) // Ensure boolean conversion
-                  });
-                  setShowAddForm(true);
-                }
-              }}
-              className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
-            >
-              Edit
-            </button>
-              <button
-                onClick={() => handleDelete(completer._id)}
-                className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        ))}
+      <div className="overflow-x-auto">
+        <table className="min-w-full bg-[#1c0c2e] rounded-lg">
+          <thead>
+            <tr>
+              <th className="p-3 text-left">Image</th>
+              <th className="p-3 text-left">Project</th>
+              <th className="p-3 text-left">Profile</th>
+              <th className="p-3 text-left">Position</th>
+              <th className="p-3 text-left">Visible</th>
+              <th className="p-3 text-left">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {completers.map(completer => (
+              <tr key={completer._id} className="border-t border-gray-700">
+                <td className="p-3">
+                  <img 
+                    src={getImageUrl(completer.profilePicture)} 
+                    alt={completer.projectName}
+                    className="w-16 h-16 object-cover rounded"
+                  />
+                </td>
+                <td className="p-3">{completer.projectName}</td>
+                <td className="p-3">{completer.profile}</td>
+                <td className="p-3">{completer.position}</td>
+                <td className="p-3">{completer.visible ? 'Yes' : 'No'}</td>
+                <td className="p-3">
+                  <button
+                    onClick={() => handleDelete(completer._id)}
+                    className="bg-red-600 text-white px-3 py-1 rounded mr-2"
+                    disabled={isLoading}
+                  >
+                    Delete
+                  </button>
+                  <button
+                    onClick={async () => {
+                      const data = await fetchCompleterById(completer._id);
+                      if (data) {
+                        setFormData({
+                          projectName: data.projectName,
+                          profile: data.profile,
+                          position: data.position,
+                          description: data.description,
+                          funding: data.funding,
+                          linkedinUrl: data.linkedinUrl,
+                          visible: data.visible
+                        });
+                        setEditingId(data._id);
+                        setShowAddForm(true);
+                      }
+                    }}
+                    className="bg-blue-600 text-white px-3 py-1 rounded"
+                    disabled={isLoading}
+                  >
+                    Edit
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );

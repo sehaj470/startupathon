@@ -26,7 +26,7 @@ exports.createCompleter = async (req, res) => {
     const completerData = {
       ...req.body,
       visible: req.body.visible === 'true',
-      profilePicture: req.file ? req.file.filename : null
+      profilePicture: req.file ? req.file.path : null
     };
 
     console.log('Creating completer with data:', completerData);
@@ -48,7 +48,7 @@ exports.updateCompleter = async (req, res) => {
       };
       
       if (req.file) {
-          updateData.profilePicture = req.file.filename;
+          updateData.profilePicture = req.file.path;
       }
 
       const updated = await Completer.findByIdAndUpdate(

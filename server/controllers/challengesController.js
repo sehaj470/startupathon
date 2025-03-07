@@ -36,7 +36,7 @@ exports.createChallenge = async (req, res) => {
     };
 
     if (req.file) {
-      challengeData.image = req.file.filename;
+      challengeData.image = req.file.path;
     }
 
     console.log('Creating challenge with data:', challengeData);
@@ -67,7 +67,7 @@ exports.updateChallenge = async (req, res) => {
     };
 
     if (req.file) {
-      updateData.image = req.file.filename;
+      updateData.image = req.file.path;
     }
 
     console.log('Updating challenge with data:', updateData);

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { API_ENDPOINTS } from '../config/api';
 
 const CompleterDetails = () => {
   const [completer, setCompleter] = useState(null);
@@ -12,7 +13,7 @@ const CompleterDetails = () => {
   useEffect(() => {
     const fetchCompleter = async () => {
       try {
-        const res = await axios.get(`http://localhost:5000/api/completers/${id}`);
+        const res = await axios.get(`${API_ENDPOINTS.COMPLETERS}/${id}`);
         if (!res.data.visible) {
           navigate('/'); // Redirect if not visible
           return;
@@ -47,7 +48,16 @@ const CompleterDetails = () => {
 
   const getImageUrl = (imagePath) => {
     if (!imagePath) return 'https://via.placeholder.com/300';
-    return `http://localhost:5000/uploads/completers/${imagePath}`;
+    
+    // Check if the image path is already a full URL (Cloudinary)
+    if (imagePath.startsWith('http')) {
+      return imagePath;
+    }
+    
+    // Extract the base URL from the API_ENDPOINTS
+    const baseUrl = API_ENDPOINTS.COMPLETERS.split('/api')[0];
+    // Fallback for local development
+    return `${baseUrl}/uploads/completers/${imagePath}`;
   };
 
   return (

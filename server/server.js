@@ -14,24 +14,22 @@ const publicChallenges = require('./routes/public/publicChallenges');
 const publicCompleters = require('./routes/public/publicCompleters');
 const publicSubscribers = require('./routes/public/publicSubscribers');
 
-
-
 const app = express();
 
+// CORS configuration - updated for production
 app.use(cors({
-    origin: 'http://localhost:5173', // Your frontend URL
+    origin: process.env.NODE_ENV === 'production' 
+        ? process.env.CLIENT_URL || 'https://your-frontend-domain.vercel.app' 
+        : 'http://localhost:5173',
     credentials: true
 }));
 
 app.use(express.json());
 
-mongoose.connect('mongodb+srv://sehajsaran47:DoctorVehmaDa@5911@cluster0.9siwc.mongodb.net/startupthonDB?retryWrites=true&w=majority&appName=Cluster0')
-
 // Connect to DB
 connectDB();
 
 // Routes
-
 app.use((req, res, next) => {
     console.log('Request:', {
         method: req.method,
@@ -42,10 +40,7 @@ app.use((req, res, next) => {
     next();
 });
 
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-app.use('/uploads/challenges', express.static(path.join(__dirname, 'uploads/challenges')));
-app.use('/uploads/completers', express.static(path.join(__dirname, 'uploads/completers')));
-
+// API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/admin/challenges', challengeRoutes);
 app.use('/api/admin/founders', founderRoutes);
@@ -56,6 +51,17 @@ app.use('/api/subscribers', publicSubscribers);
 app.use('/api/challenges', publicChallenges);
 app.use('/api/completers', publicCompleters);
 
+// Health check endpoint for Vercel
+app.get('/api/health', (req, res) => {
+    res.status(200).json({ status: 'ok' });
+});
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+// For local development
+if (process.env.NODE_ENV !== 'production') {
+    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+}
+
+// Export for Vercel serverless functions
+module.exports = app;
