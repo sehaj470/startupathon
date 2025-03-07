@@ -1,5 +1,6 @@
 import React from 'react';
 import { FaLinkedinIn, FaInstagram, FaYoutube } from 'react-icons/fa';
+import logoSvg from "/src/assets/logo.svg";
 
 const Footer = () => {
   return (
@@ -12,7 +13,7 @@ const Footer = () => {
             {/* Logo Image (text + logo in one image) */}
             <div>
               <img
-                src="/src/assets/logo.svg"
+                src={logoSvg}
                 alt="Persist Ventures"
                 className="w-60 h-auto"
               />

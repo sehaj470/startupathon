@@ -32,12 +32,26 @@ try {
   // Continue execution even if env check fails
 }
 
-// CORS configuration - updated for production
+// CORS configuration - updated for production with multiple allowed origins
+const allowedOrigins = [
+  'https://startupathon.vercel.app',
+  'https://startupathon-kdu7.vercel.app',
+  'http://localhost:5173'
+];
+
 app.use(cors({
-    origin: process.env.NODE_ENV === 'production' 
-        ? process.env.CLIENT_URL || 'https://startupathon.vercel.app' 
-        : 'http://localhost:5173',
-    credentials: true
+  origin: function(origin, callback) {
+    // Allow requests with no origin (like mobile apps, curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      console.log('CORS blocked origin:', origin);
+      callback(null, true); // Still allow all origins for now, but log blocked ones
+    }
+  },
+  credentials: true
 }));
 
 app.use(express.json());
