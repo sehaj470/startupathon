@@ -3,7 +3,6 @@ import './App.css'
 
 
 import { Routes, Route } from 'react-router-dom';
-import Home from './pages/Home';
 import AdminLayout from './pages/Admin/AdminLayout';
 import Login from './pages/Admin/Login';
 import HomeChallenges from './pages/HomeChallenges';
@@ -13,7 +12,6 @@ import Banner from './components/Banner/Banner';
 import Footer from './components/Footer/Footer';
 import FellowshipApplicationForm from "./components/FellowshipApplicationForm/FellowshipApplicationForm";
 import CompleterDetails from './pages/CompleterDetails';
-
 import NavbarGROK from './components/Navbar/NavbarGROK'
 import Hero from './components/Hero/Hero'
 
@@ -43,10 +41,6 @@ function App() {
   };
 
   return (
-    // <>
-    //   <NavbarGROK />
-    //   <Hero />
-    // </>
 
       <Routes>
       {/* Public Route */}
