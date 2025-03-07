@@ -75,19 +75,52 @@ app.use((req, res, next) => {
 
 app.use(express.json());
 
+// Initialize database connection
+const initializeDatabase = async () => {
+  try {
+    console.log('Initializing database connection...');
+    const result = await connectDB();
+    
+    if (result && result.error) {
+      console.error('Database initialization failed:', result.error);
+      return false;
+    }
+    
+    console.log('Database initialized successfully');
+    return true;
+  } catch (error) {
+    console.error('Error during database initialization:', error);
+    return false;
+  }
+};
+
+// Ensure database functions are called on startup
+(async function() {
+  console.log('Running startup sequence...');
+  await initializeDatabase();
+})();
+
 // Health check endpoint for Vercel - placed before DB connection to ensure it works even if DB fails
 app.get('/api/health', (req, res) => {
     console.log('Health check endpoint hit');
+    
     // Set CORS headers explicitly for this endpoint
     res.header('Access-Control-Allow-Origin', '*');
     res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    res.status(200).json({ status: 'ok', message: 'Server is running' });
+    
+    res.status(200).json({ 
+      status: 'ok', 
+      message: 'Server is running',
+      environment: process.env.NODE_ENV,
+      timestamp: new Date().toISOString()
+    });
 });
 
 // Database status endpoint
 app.get('/api/db-status', async (req, res) => {
     console.log('DB status endpoint hit');
+    
     // Set CORS headers explicitly for this endpoint
     res.header('Access-Control-Allow-Origin', '*');
     res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -95,64 +128,64 @@ app.get('/api/db-status', async (req, res) => {
     
     try {
         // Check if mongoose is connected
-        if (mongoose.connection.readyState === 1) {
-            console.log('Database is connected');
-            res.status(200).json({ status: 'connected', message: 'Database is connected' });
+        const readyState = mongoose.connection.readyState;
+        const statusMap = {
+            0: 'disconnected',
+            1: 'connected',
+            2: 'connecting',
+            3: 'disconnecting'
+        };
+        
+        console.log(`Current MongoDB connection state: ${statusMap[readyState]} (${readyState})`);
+        
+        if (readyState === 1) {
+            // Already connected
+            res.status(200).json({ 
+                status: 'connected', 
+                message: 'Database is connected',
+                dbName: mongoose.connection.name,
+                host: mongoose.connection.host
+            });
         } else {
+            // Not connected, try to connect
             console.log('Database is not connected, attempting to connect...');
-            // Try to connect to the database
-            await connectDB();
-            if (mongoose.connection.readyState === 1) {
-                console.log('Database connection successful');
-                res.status(200).json({ status: 'connected', message: 'Database connection successful' });
+            const result = await connectDB();
+            
+            if (result && result.error) {
+                // Connection failed
+                console.error('Database connection attempt failed:', result.error);
+                res.status(500).json({ 
+                    status: 'error', 
+                    message: 'Failed to connect to database', 
+                    details: process.env.NODE_ENV === 'production' ? 'Database connection error' : result.error.message 
+                });
             } else {
-                console.log('Database connection failed');
-                res.status(500).json({ status: 'error', message: 'Database connection failed' });
+                // Check connection state again
+                const newState = mongoose.connection.readyState;
+                if (newState === 1) {
+                    res.status(200).json({ 
+                        status: 'connected', 
+                        message: 'Database connection successful',
+                        dbName: mongoose.connection.name,
+                        host: mongoose.connection.host
+                    });
+                } else {
+                    res.status(500).json({ 
+                        status: 'error', 
+                        message: `Database connection in state: ${statusMap[newState]} (${newState})` 
+                    });
+                }
             }
         }
     } catch (error) {
         console.error('Error checking database status:', error);
-        res.status(500).json({ status: 'error', message: 'Error checking database status', error: error.message });
+        res.status(500).json({ 
+            status: 'error', 
+            message: 'Error checking database status', 
+            error: process.env.NODE_ENV === 'production' ? 'Internal server error' : error.message 
+        });
     }
 });
-
-// Connect to DB with better error handling
-let dbConnected = false;
-let dbConnectionAttempted = false;
-
-const initializeDatabase = async () => {
-    if (dbConnectionAttempted) return;
-    dbConnectionAttempted = true;
-    
-    try {
-        console.log('Attempting to connect to MongoDB...');
-        await connectDB();
-        dbConnected = true;
-        console.log('MongoDB connected successfully');
-        
-        // Log connection status periodically
-        setInterval(() => {
-            const status = mongoose.connection.readyState;
-            const statusText = status === 1 ? 'connected' : 
-                              status === 2 ? 'connecting' : 
-                              status === 3 ? 'disconnecting' : 'disconnected';
-            console.log(`MongoDB connection status: ${statusText} (${status})`);
-            
-            // If disconnected, try to reconnect
-            if (status === 0) {
-                console.log('MongoDB disconnected, attempting to reconnect...');
-                connectDB()
-                    .then(() => console.log('MongoDB reconnected successfully'))
-                    .catch(error => console.error('Failed to reconnect to MongoDB:', error));
-            }
-        }, 60000); // Check every minute
-    } catch (error) {
-        console.error('Error in DB connection setup:', error);
-    }
-};
-
-// Initialize database connection
-initializeDatabase();
 
 // Request logging middleware
 app.use((req, res, next) => {

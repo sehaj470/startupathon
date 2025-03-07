@@ -10,6 +10,8 @@ if (currentDomain.includes('startupathon-kdu7.vercel.app')) {
   apiUrl = 'https://startupathon.vercel.app';
 } else if (currentDomain.includes('startupathon.vercel.app')) {
   apiUrl = 'https://startupathon.vercel.app';
+} else if (currentDomain.includes('localhost')) {
+  apiUrl = 'http://localhost:5000';
 }
 
 // Remove trailing slash if present
@@ -17,33 +19,29 @@ const normalizedApiUrl = apiUrl.endsWith('/') ? apiUrl.slice(0, -1) : apiUrl;
 
 console.log('Using API URL:', normalizedApiUrl);
 
-// Base API endpoints
+// Export API endpoints for use throughout the application
 export const API_ENDPOINTS = {
-  // Public endpoints
-  CHALLENGES: `${normalizedApiUrl}/api/challenges`,
-  COMPLETERS: `${normalizedApiUrl}/api/completers`,
-  SUBSCRIBERS: `${normalizedApiUrl}/api/subscribers`,
+  // Auth endpoints
+  LOGIN: '/api/auth/login',
+  REGISTER: '/api/auth/register',
+  LOGOUT: '/api/auth/logout',
   
-  // Admin endpoints
-  AUTH: `${normalizedApiUrl}/api/auth`,
-  ADMIN_CHALLENGES: `${normalizedApiUrl}/api/admin/challenges`,
-  ADMIN_FOUNDERS: `${normalizedApiUrl}/api/admin/founders`,
-  ADMIN_COMPLETERS: `${normalizedApiUrl}/api/admin/completers`,
-  ADMIN_SUBSCRIBERS: `${normalizedApiUrl}/api/admin/subscribers`,
-};
-
-// Helper function to get auth config for protected routes
-export const getAuthConfig = (contentType = 'application/json') => {
-  const token = localStorage.getItem('token');
-  return {
-    headers: {
-      Authorization: token ? `Bearer ${token}` : '',
-      'Content-Type': contentType,
-      'Accept': 'application/json'
-    },
-    withCredentials: false, // Disable sending cookies for cross-origin requests
-    timeout: 30000 // 30 seconds timeout
-  };
+  // Status endpoints
+  HEALTH: '/api/health',
+  DB_STATUS: '/api/db-status',
+  
+  // Data endpoints
+  CHALLENGES: '/api/challenges',
+  CHALLENGE: (id) => `/api/challenges/${id}`,
+  COMPLETERS: '/api/completers',
+  COMPLETER: (id) => `/api/completers/${id}`,
+  SUBSCRIBSERS: '/api/subscribers',
+  FOUNDERS: '/api/founders',
+  USERS: '/api/users',
+  USER: (id) => `/api/users/${id}`,
+  
+  // Admin actions
+  UPLOAD: '/api/upload'
 };
 
 // Helper function for making API requests with error handling
@@ -90,13 +88,25 @@ export const apiRequest = async (method, url, data = null, config = {}) => {
         return response.data;
       } catch (error) {
         lastError = error;
+        
+        // Check if there's a CORS issue
+        if (error.message && error.message.includes('NetworkError') || error.message.includes('Network Error')) {
+          console.warn('Network error detected (possible CORS issue), retrying with alternative approach...');
+          retries = 0; // Don't retry with the same approach
+          
+          // Try an alternative approach - using a JSONP-like approach or proxy if available
+          throw error; // For now, just throw the error
+        }
+        
         if (error.response && error.response.status !== 500) {
           throw error; // Don't retry if it's not a server error
         }
+        
         retries--;
         if (retries > 0) {
-          await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before retrying
-          console.log(`Retrying request to ${url}, ${retries} attempts remaining`);
+          const delay = 1000 * (4 - retries); // Progressive backoff: 1s, 2s, 3s
+          console.log(`Retrying request to ${url} in ${delay}ms, ${retries} attempts remaining`);
+          await new Promise(resolve => setTimeout(resolve, delay));
         }
       }
     }
@@ -118,7 +128,7 @@ export const apiRequest = async (method, url, data = null, config = {}) => {
     } else if (error.request) {
       console.error('No response received:', error.request);
       throw {
-        message: 'No response from server. Please check your internet connection.',
+        message: 'No response from server. The server might be down or there might be a network/CORS issue.',
         request: error.request
       };
     } else {
