@@ -47,7 +47,7 @@ const connectDB = async () => {
       directConnection: false,
       // For serverless functions, we'll allow buffering to ensure operations complete
       bufferCommands: true,            // Allow command buffering to avoid timing issues
-      bufferMaxEntries: 0              // Disable buffering when connection is down
+      //bufferMaxEntries: 0              // Disable buffering when connection is down
     };
     
     console.log('Attempting mongoose.connect with serverless-optimized options...');
