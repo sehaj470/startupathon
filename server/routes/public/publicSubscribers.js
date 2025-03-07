@@ -2,26 +2,54 @@ const express = require('express');
 const router = express.Router();
 const Subscriber = require('../../models/Subscriber');
 
-// POST /api/subscribers - Create new subscriber
+// Set explicit CORS headers on all routes in this router
+router.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', 'https://startupathon-kdu7.vercel.app');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  
+  next();
+});
+
+// GET all subscribers
+router.get('/', async (req, res) => {
+  try {
+    const subscribers = await Subscriber.find().sort({ createdAt: -1 });
+    res.status(200).json(subscribers);
+  } catch (error) {
+    console.error('Error fetching subscribers:', error);
+    res.status(500).json({ error: 'Failed to fetch subscribers' });
+  }
+});
+
+// POST new subscriber
 router.post('/', async (req, res) => {
   try {
     const { email } = req.body;
     
-    // Check for duplicate email
-    const existing = await Subscriber.findOne({ email });
-    if (existing) {
+    // Validate email
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+    
+    // Check if subscriber already exists
+    const existingSubscriber = await Subscriber.findOne({ email });
+    if (existingSubscriber) {
       return res.status(400).json({ error: 'Email already subscribed' });
     }
-
-    const subscriber = new Subscriber({
-      email,
-      subscriptionDate: new Date()
-    });
     
+    // Create new subscriber
+    const subscriber = new Subscriber({ email });
     await subscriber.save();
-    res.status(201).json(subscriber);
-  } catch (err) {
-    res.status(400).json({ error: err.message });
+    
+    res.status(201).json({ message: 'Subscription successful', subscriber });
+  } catch (error) {
+    console.error('Error creating subscriber:', error);
+    res.status(500).json({ error: 'Failed to create subscriber' });
   }
 });
 

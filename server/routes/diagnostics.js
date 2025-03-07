@@ -3,10 +3,21 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const connectDB = require('../config/db');
 
+// Set explicit CORS headers for all diagnostics routes
+router.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', 'https://startupathon-kdu7.vercel.app');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  
+  next();
+});
+
 // Get detailed system and environment info
 router.get('/system', (req, res) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  
   const systemInfo = {
     timestamp: new Date().toISOString(),
     node: {
@@ -31,8 +42,6 @@ router.get('/system', (req, res) => {
 
 // Test MongoDB connection
 router.get('/db-test', async (req, res) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  
   try {
     // Try connecting to MongoDB
     const result = await connectDB();
@@ -74,8 +83,6 @@ router.get('/db-test', async (req, res) => {
 
 // Echo the request body, headers, etc.
 router.post('/echo', (req, res) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  
   res.status(200).json({
     message: 'Echo response',
     requestBody: req.body,
@@ -88,10 +95,6 @@ router.post('/echo', (req, res) => {
 
 // Test CORS
 router.get('/cors-test', (req, res) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  
   res.status(200).json({
     message: 'CORS test successful',
     origin: req.headers.origin || 'No origin header',

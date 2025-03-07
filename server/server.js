@@ -40,6 +40,10 @@ const allowedOrigins = process.env.CLIENT_URL
 
 console.log('Allowed origins:', allowedOrigins);
 
+// CORS preflight OPTIONS handler - place before other routes
+app.options('*', cors());
+
+// Main CORS configuration
 app.use(cors({
   origin: function(origin, callback) {
     // Allow requests with no origin (like mobile apps, curl requests)
@@ -49,8 +53,7 @@ app.use(cors({
       callback(null, true);
     } else {
       console.log('Blocked origin:', origin);
-      // Instead of throwing an error, allow the request but log it
-      // This helps prevent CORS errors during development/debugging
+      // Return true for all origins during development but log blocked ones
       callback(null, true);
     }
   },
@@ -60,16 +63,27 @@ app.use(cors({
   maxAge: 86400 // 24 hours
 }));
 
-// Add a middleware to manually set CORS headers for all responses
+// Add a middleware to ensure CORS headers are set on all responses
 app.use((req, res, next) => {
   const origin = req.headers.origin;
-  if (allowedOrigins.indexOf(origin) !== -1 || allowedOrigins.includes('*')) {
+  
+  // Handle preflight OPTIONS requests
+  if (req.method === 'OPTIONS') {
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept');
+    res.header('Access-Control-Max-Age', '86400');
+    return res.status(200).end();
+  }
+  
+  // Set CORS headers for all requests
+  if (origin && (allowedOrigins.indexOf(origin) !== -1 || allowedOrigins.includes('*'))) {
     res.header('Access-Control-Allow-Origin', origin);
   } else {
-    res.header('Access-Control-Allow-Origin', allowedOrigins[0]);
+    // For requests without origin or from unknown origins, use the first allowed origin
+    // This is more secure than using a wildcard
+    res.header('Access-Control-Allow-Origin', 'https://startupathon-kdu7.vercel.app');
   }
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept');
+  
   res.header('Access-Control-Allow-Credentials', 'true');
   next();
 });
@@ -101,9 +115,6 @@ const initializeDatabase = async () => {
   await initializeDatabase();
 })();
 
-// CORS preflight OPTIONS handler - place before other routes
-app.options('*', cors());
-
 // Database connection middleware - connect for each request
 app.use(async (req, res, next) => {
   // Skip database connection for health check 
@@ -130,7 +141,7 @@ app.get('/api/health', (req, res) => {
     console.log('Health check endpoint hit');
     
     // Set CORS headers explicitly for this endpoint
-    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Origin', 'https://startupathon-kdu7.vercel.app');
     res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     
@@ -147,7 +158,7 @@ app.get('/api/db-status', async (req, res) => {
     console.log('DB status endpoint hit');
     
     // Set CORS headers explicitly for this endpoint
-    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Origin', 'https://startupathon-kdu7.vercel.app');
     res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     
