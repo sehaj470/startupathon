@@ -15,9 +15,9 @@ const Login = () => {
     setError('');
     
     try {
-      console.log('Attempting login with API endpoint:', API_ENDPOINTS.AUTH);
+      console.log('Attempting login with API endpoint:', API_ENDPOINTS.LOGIN);
       
-      const data = await apiRequest('post', `${API_ENDPOINTS.AUTH}/login`, {
+      const data = await apiRequest('post', API_ENDPOINTS.LOGIN, {
         email,
         password
       });

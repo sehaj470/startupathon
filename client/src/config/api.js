@@ -25,6 +25,7 @@ export const API_ENDPOINTS = {
   LOGIN: '/api/auth/login',
   REGISTER: '/api/auth/register',
   LOGOUT: '/api/auth/logout',
+  AUTH: '/api/auth',
   
   // Status endpoints
   HEALTH: '/api/health',
@@ -75,10 +76,17 @@ export const apiRequest = async (method, url, data = null, config = {}) => {
       mode: 'cors'
     };
     
+    // Add authorization token if available
+    if (localStorage.getItem('token')) {
+      defaultConfig.headers['Authorization'] = `Bearer ${localStorage.getItem('token')}`;
+    }
+    
     const mergedConfig = { ...defaultConfig, ...config };
     
     // Prepare the URL - ensure it has the correct base URL
     const fullUrl = url.startsWith('http') ? url : `${normalizedApiUrl}${url}`;
+    
+    console.log(`Full request URL: ${fullUrl}`);
     
     // Implement retry logic with progressive backoff
     const MAX_RETRIES = 3;
