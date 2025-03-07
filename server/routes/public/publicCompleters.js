@@ -26,16 +26,17 @@ router.get('/', async (req, res) => {
   }
 });
 
-// GET /api/completers/:id - returns a specific completer
+// GET single completer by ID
 router.get('/:id', async (req, res) => {
   try {
     const completer = await Completer.findById(req.params.id);
     if (!completer) {
       return res.status(404).json({ error: 'Completer not found' });
     }
-    res.json(completer);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(200).json(completer);
+  } catch (error) {
+    console.error('Error fetching completer:', error);
+    res.status(500).json({ error: 'Failed to fetch completer' });
   }
 });
 
