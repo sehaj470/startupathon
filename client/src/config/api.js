@@ -1,8 +1,19 @@
 // API configuration for both development and production environments
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
+// Get the current domain
+const currentDomain = typeof window !== 'undefined' ? window.location.hostname : '';
+
+// Determine the API domain based on the current domain
+let apiUrl = API_URL;
+if (currentDomain.includes('startupathon-kdu7.vercel.app')) {
+  apiUrl = 'https://startupathon.vercel.app';
+}
+
 // Remove trailing slash if present
-const normalizedApiUrl = API_URL.endsWith('/') ? API_URL.slice(0, -1) : API_URL;
+const normalizedApiUrl = apiUrl.endsWith('/') ? apiUrl.slice(0, -1) : apiUrl;
+
+console.log('Using API URL:', normalizedApiUrl);
 
 // Base API endpoints
 export const API_ENDPOINTS = {
@@ -25,8 +36,10 @@ export const getAuthConfig = (contentType = 'application/json') => {
   return {
     headers: {
       Authorization: token ? `Bearer ${token}` : '',
-      'Content-Type': contentType
-    }
+      'Content-Type': contentType,
+      'Accept': 'application/json'
+    },
+    withCredentials: false // Disable sending cookies for cross-origin requests
   };
 };
 

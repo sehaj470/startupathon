@@ -7,9 +7,28 @@ import { API_ENDPOINTS } from '../config/api';
  */
 export const checkDatabaseConnection = async () => {
   try {
-    // Remove the /api part from the endpoint to get the base URL
-    const baseUrl = API_ENDPOINTS.CHALLENGES.split('/api')[0];
-    const response = await axios.get(`${baseUrl}/api/db-status`);
+    // Get the current domain
+    const currentDomain = window.location.hostname;
+    
+    // Determine the API domain based on the current domain
+    let apiDomain;
+    if (currentDomain.includes('startupathon-kdu7.vercel.app')) {
+      apiDomain = 'https://startupathon.vercel.app';
+    } else {
+      // Remove the /api part from the endpoint to get the base URL
+      apiDomain = API_ENDPOINTS.CHALLENGES.split('/api')[0];
+    }
+    
+    console.log('Checking database connection at:', `${apiDomain}/api/db-status`);
+    
+    const response = await axios.get(`${apiDomain}/api/db-status`, {
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      withCredentials: false // Disable sending cookies for cross-origin requests
+    });
+    
     console.log('Database connection status:', response.data);
     return response.data;
   } catch (error) {
@@ -28,9 +47,28 @@ export const checkDatabaseConnection = async () => {
  */
 export const checkServerHealth = async () => {
   try {
-    // Remove the /api part from the endpoint to get the base URL
-    const baseUrl = API_ENDPOINTS.CHALLENGES.split('/api')[0];
-    const response = await axios.get(`${baseUrl}/api/health`);
+    // Get the current domain
+    const currentDomain = window.location.hostname;
+    
+    // Determine the API domain based on the current domain
+    let apiDomain;
+    if (currentDomain.includes('startupathon-kdu7.vercel.app')) {
+      apiDomain = 'https://startupathon.vercel.app';
+    } else {
+      // Remove the /api part from the endpoint to get the base URL
+      apiDomain = API_ENDPOINTS.CHALLENGES.split('/api')[0];
+    }
+    
+    console.log('Checking server health at:', `${apiDomain}/api/health`);
+    
+    const response = await axios.get(`${apiDomain}/api/health`, {
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      withCredentials: false // Disable sending cookies for cross-origin requests
+    });
+    
     console.log('Server health status:', response.data);
     return response.data;
   } catch (error) {

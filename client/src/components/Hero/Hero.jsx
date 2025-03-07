@@ -3,6 +3,23 @@ import styled from 'styled-components';
 import "./Hero.css";
 import { useNavigate } from "react-router-dom";
 
+// Import background image
+import teamBgImage from "/src/assets/img/pv_team_cropped_bg.png";
+
+// Import icons
+import ongoingStartupthonIcon from "/src/assets/icons/ongoing_startupthon.png";
+import startupthonGuideIcon from "/src/assets/icons/startupthon_guide.png";
+import pastStartupthonsIcon from "/src/assets/icons/past_startupthons.png";
+import mentorNetworkIcon from "/src/assets/icons/mentor_network.png";
+import competitiveSalaryIcon from "/src/assets/icons/competitive_salary.png";
+import companyFundingIcon from "/src/assets/icons/company_funding.png";
+import founderEquityIcon from "/src/assets/icons/founder_equity.png";
+import awsIcon from "/src/assets/icons/aws.png";
+import chatgptIcon from "/src/assets/icons/chatgpt.png";
+import ibmIcon from "/src/assets/icons/ibm.png";
+import twilioIcon from "/src/assets/icons/twilio.png";
+import airtablesIcon from "/src/assets/icons/airtables_credit.png";
+
 const Hero = ({ scrollToSection }) => {
   const navigate = useNavigate();
   return (
@@ -10,7 +27,9 @@ const Hero = ({ scrollToSection }) => {
       <div className="outer-container">
         <div className="container">
           <img
-            src="src\assets\img\pv_team_cropped_bg.png" alt="Team" className="grayscale"
+            src={teamBgImage} 
+            alt="Team" 
+            className="grayscale"
           />
         </div>
       </div>
@@ -53,7 +72,7 @@ const Hero = ({ scrollToSection }) => {
             Ongoing Startupathon
           </button>
           <img
-            src="src/assets/icons/ongoing_startupthon.png"
+            src={ongoingStartupthonIcon}
             alt="Ongoing Startupathon Icon"
             className="ml-2 w-6 h-6"
           />
@@ -71,7 +90,7 @@ const Hero = ({ scrollToSection }) => {
             Startupathon Guide
           </button>
           <img
-            src="src/assets/icons/startupthon_guide.png"
+            src={startupthonGuideIcon}
             alt="Startupathon Guide Icon"
             className="ml-2 w-6 h-6"
           />
@@ -89,7 +108,7 @@ const Hero = ({ scrollToSection }) => {
             Past Startupathon
           </button>
           <img
-            src="src/assets/icons/past_startupthons.png"
+            src={pastStartupthonsIcon}
             alt="Past Startupathon Icon"
             className="ml-2 w-6 h-6"
           />
@@ -101,7 +120,7 @@ const Hero = ({ scrollToSection }) => {
             Mentor Network
           </button>
           <img
-            src="src/assets/icons/mentor_network.png"
+            src={mentorNetworkIcon}
             alt="Mentor Network Icon"
             className="ml-2 w-6 h-6"
           />
@@ -120,7 +139,7 @@ const Hero = ({ scrollToSection }) => {
           {/* Item 1 */}
           <div className="rewards flex flex-col items-center justify-center mt-8 size-37 lg:size-42 max-[906px]:w-30 text-sm lg:text-[16px]">
             <img
-              src="src\assets\icons\competitive_salary.png"
+              src={competitiveSalaryIcon}
               alt="Competitive Salary Icon"
               className="mb-2 size-14"
             />
@@ -130,7 +149,7 @@ const Hero = ({ scrollToSection }) => {
           {/* Item 2 */}
           <div className="rewards flex flex-col items-center justify-center mt-8 size-37 lg:size-42 max-[906px]:w-30 text-sm lg:text-[16px]">
             <img
-              src="src\assets\icons\company_funding.png"
+              src={companyFundingIcon}
               alt="AWS Icon"
               className="mb-2 size-14"
             />
@@ -140,7 +159,7 @@ const Hero = ({ scrollToSection }) => {
           {/* Item 3 */}
           <div className="rewards flex flex-col items-center justify-center mt-8 size-37 lg:size-42 max-[906px]:w-30 text-sm lg:text-[16px]">
             <img
-              src="src\assets\icons\founder_equity.png"
+              src={founderEquityIcon}
               alt="Cash Prize Icon"
               className="mb-2 size-14"
             />
@@ -150,7 +169,7 @@ const Hero = ({ scrollToSection }) => {
           {/* Item 4 */}
           <div className="rewards flex flex-col items-center justify-center mt-8 size-37 lg:size-42 max-[906px]:w-30 text-sm lg:text-[16px]">
             <img
-              src="src\assets\icons\aws.png"
+              src={awsIcon}
               alt="Mentorship Icon"
               className="mb-2 size-14"
             />
@@ -160,7 +179,7 @@ const Hero = ({ scrollToSection }) => {
           {/* Item 5 */}
           <div className="rewards flex flex-col items-center justify-center mt-8 size-37 lg:size-42 max-[906px]:w-30 text-sm lg:text-[16px]">
             <img
-              src="src\assets\icons\chatgpt.png"
+              src={chatgptIcon}
               alt="Mentorship Icon"
               className="mb-2 size-14"
             /> 
@@ -170,7 +189,7 @@ const Hero = ({ scrollToSection }) => {
           {/* Item 6 */}
           <div className="rewards flex flex-col items-center justify-center mt-8 size-37 lg:size-42 max-[906px]:w-30 text-sm lg:text-[16px] md:col-start-2">
             <img
-              src="src\assets\icons\ibm.png"
+              src={ibmIcon}
               alt="Mentorship Icon"
               className="mb-2 size-14"
             />
@@ -180,7 +199,7 @@ const Hero = ({ scrollToSection }) => {
           {/* Item 7 */}
           <div className="rewards flex flex-col items-center justify-center mt-8 size-37 lg:size-42 max-[906px]:w-30  text-sm lg:text-[16px]">
             <img
-              src="src\assets\icons\twilio.png"
+              src={twilioIcon}
               alt="Mentorship Icon"
               className="mb-2 size-14"
             />
@@ -190,22 +209,17 @@ const Hero = ({ scrollToSection }) => {
           {/* Item 8 */}
           <div className="rewards flex flex-col items-center justify-center mt-8 size-37 lg:size-42 max-[906px]:w-30 text-sm lg:text-[16px]">
             <img
-              src="src\assets\icons\airtables_credit.png"
+              src={airtablesIcon}
               alt="Mentorship Icon"
               className="mb-2 size-14"
             />
             <p className="w-32 max-[906px]:w-26">$2,000 Airtable Credits</p>
           </div>
         </div>
-
-        
-
       </div>
     </section>
-
     </>
   );
 };
-
 
 export default Hero;

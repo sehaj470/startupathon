@@ -112,10 +112,22 @@ function App() {
       } />
 
       {/* Route for the application form */}
-      <Route path="/apply" element={<FellowshipApplicationForm />} />
+      <Route path="/apply" element={
+        <>
+          <NavbarGROK scrollToSection={scrollToSection} />
+          <FellowshipApplicationForm />
+          <Footer />
+        </>
+      } />
 
       {/* Route for completer details */}
-      <Route path="/completers/:id" element={<CompleterDetails />} />
+      <Route path="/completers/:id" element={
+        <>
+          <NavbarGROK scrollToSection={scrollToSection} />
+          <CompleterDetails />
+          <Footer />
+        </>
+      } />
 
       {/* Admin Routes */}
       <Route path="/admin/login" element={<Login />} />
