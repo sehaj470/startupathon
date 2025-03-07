@@ -1,9 +1,18 @@
 // server/config/db.js
 const mongoose = require('mongoose');
 
+// Cached connection
+let cachedConnection = null;
+
 const connectDB = async () => {
   try {
-    console.log('Connecting to MongoDB...');
+    console.log('MongoDB connection requested...');
+    
+    // If we have a cached connection, return it
+    if (cachedConnection && mongoose.connection.readyState === 1) {
+      console.log('Using cached MongoDB connection');
+      return cachedConnection;
+    }
     
     // Get MONGO_URI from environment
     const uri = process.env.MONGO_URI;
@@ -25,70 +34,58 @@ const connectDB = async () => {
     
     // Debug info about database name
     const dbName = uri.split('/').pop().split('?')[0];
-    console.log('Database name from URI:', dbName);
+    console.log('Target database name:', dbName);
     
-    // Check if already connected
-    if (mongoose.connection.readyState === 1) {
-      console.log('MongoDB already connected');
-      return mongoose.connection;
-    }
-    
-    // Configure mongoose connection options for Vercel environment
+    // Configure mongoose connection options optimized for serverless
     const options = {
       useNewUrlParser: true,
       useUnifiedTopology: true,
-      serverSelectionTimeoutMS: 30000, // 30 seconds
-      socketTimeoutMS: 45000, // 45 seconds
-      connectTimeoutMS: 30000, // 30 seconds
-      // Explicitly set directConnection to false for Atlas
+      serverSelectionTimeoutMS: 10000, // Reduced timeout for serverless
+      connectTimeoutMS: 10000,         // Reduced timeout for serverless
+      heartbeatFrequencyMS: 30000,     // Longer heartbeat interval 
+      // Explicitly set for Atlas
       directConnection: false,
-      // No auto_reconnect for Vercel serverless functions
+      // Important for serverless:
+      bufferCommands: false,           // Disable command buffering
+      // Not using autoReconnect in serverless environments
       autoReconnect: false
     };
     
-    console.log('Mongoose connection options:', JSON.stringify(options));
+    console.log('Attempting mongoose.connect with serverless-optimized options...');
     
-    // Connect to MongoDB with promise
-    console.log('Attempting mongoose.connect...');
+    // Connect to MongoDB
     const conn = await mongoose.connect(uri, options);
     
     console.log('MongoDB Connected Successfully!');
-    console.log(`Connected to host: ${conn.connection.host}`);
-    console.log(`Database name: ${conn.connection.name}`);
+    console.log(`Host: ${conn.connection.host}`);
+    console.log(`Database: ${conn.connection.name}`);
     
-    // Set up connection error handlers for production resilience
+    // Cache the connection
+    cachedConnection = conn;
+    
+    // Setup minimal event handlers for serverless environment
     mongoose.connection.on('error', (err) => {
       console.error('MongoDB connection error:', err);
+      cachedConnection = null; // Clear cache on error
     });
     
     mongoose.connection.on('disconnected', () => {
       console.log('MongoDB disconnected');
+      cachedConnection = null; // Clear cache on disconnection
     });
-    
-    // Check the readyState again after connection
-    console.log('Final connection state:', mongoose.connection.readyState);
     
     return conn;
   } catch (error) {
     console.error('MongoDB connection error:', error.message);
-    console.error('Error name:', error.name);
-    console.error('Error stack:', error.stack);
     
-    // Log detailed error information for debugging
+    // Log more detailed error information
     if (error.name === 'MongoParseError') {
-      console.error('Invalid MongoDB connection string. Please check your MONGO_URI format.');
+      console.error('Invalid MongoDB connection string format');
     } else if (error.name === 'MongoServerSelectionError') {
-      console.error('Could not connect to MongoDB servers. This might be due to:');
-      console.error('1. Network connectivity issues');
-      console.error('2. MongoDB Atlas IP whitelist restrictions - Add 0.0.0.0/0 to your MongoDB Atlas IP whitelist');
-      console.error('3. Incorrect database credentials');
-      
-      // Try to extract more details from the error
-      if (error.message.includes('authentication failed')) {
-        console.error('Authentication failed - check username and password');
-      } else if (error.message.includes('timed out')) {
-        console.error('Connection timed out - check network and IP whitelist');
-      }
+      console.error('Could not connect to MongoDB servers. Common causes:');
+      console.error('1. IP whitelist restrictions - Add 0.0.0.0/0 to your MongoDB Atlas IP whitelist');
+      console.error('2. Network connectivity issues from Vercel to MongoDB Atlas');
+      console.error('3. Incorrect credentials');
     }
     
     // Return the error for better handling upstream

@@ -4,7 +4,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 // Get the current domain
 const currentDomain = typeof window !== 'undefined' ? window.location.hostname : '';
 
-// Determine the API domain based on the current domain
+// Dynamically determine API URL based on the current domain
 let apiUrl = API_URL;
 if (currentDomain.includes('startupathon-kdu7.vercel.app')) {
   apiUrl = 'https://startupathon.vercel.app';
@@ -44,7 +44,21 @@ export const API_ENDPOINTS = {
   UPLOAD: '/api/upload'
 };
 
-// Helper function for making API requests with error handling
+// Helper function to get auth config for protected routes
+export const getAuthConfig = (contentType = 'application/json') => {
+  const token = localStorage.getItem('token');
+  return {
+    headers: {
+      Authorization: token ? `Bearer ${token}` : '',
+      'Content-Type': contentType,
+      'Accept': 'application/json'
+    },
+    withCredentials: false,
+    timeout: 30000
+  };
+};
+
+// Helper function for making API requests with error handling and retries
 export const apiRequest = async (method, url, data = null, config = {}) => {
   const axios = (await import('axios')).default;
   
@@ -63,15 +77,19 @@ export const apiRequest = async (method, url, data = null, config = {}) => {
     
     const mergedConfig = { ...defaultConfig, ...config };
     
-    // Add retry logic
-    let retries = 3;
-    let lastError;
+    // Prepare the URL - ensure it has the correct base URL
+    const fullUrl = url.startsWith('http') ? url : `${normalizedApiUrl}${url}`;
     
-    while (retries > 0) {
+    // Implement retry logic with progressive backoff
+    const MAX_RETRIES = 3;
+    let retryCount = 0;
+    let lastError = null;
+    
+    while (retryCount <= MAX_RETRIES) {
       try {
         let response;
-        const fullUrl = url.startsWith('http') ? url : `${normalizedApiUrl}${url}`;
         
+        // Make the request based on the method
         if (method.toLowerCase() === 'get') {
           response = await axios.get(fullUrl, mergedConfig);
         } else if (method.toLowerCase() === 'post') {
@@ -88,50 +106,73 @@ export const apiRequest = async (method, url, data = null, config = {}) => {
         return response.data;
       } catch (error) {
         lastError = error;
+        retryCount++;
         
-        // Check if there's a CORS issue
-        if (error.message && error.message.includes('NetworkError') || error.message.includes('Network Error')) {
-          console.warn('Network error detected (possible CORS issue), retrying with alternative approach...');
-          retries = 0; // Don't retry with the same approach
-          
-          // Try an alternative approach - using a JSONP-like approach or proxy if available
-          throw error; // For now, just throw the error
+        // Only retry on specific error conditions
+        const shouldRetry = (
+          // No response or server errors (5xx)
+          !error.response || 
+          (error.response && error.response.status >= 500) ||
+          // Network errors
+          error.code === 'ECONNABORTED' || 
+          error.message.includes('Network Error')
+        );
+        
+        if (!shouldRetry || retryCount > MAX_RETRIES) {
+          console.log(`Not retrying request to ${fullUrl}: ${retryCount > MAX_RETRIES ? 'Max retries exceeded' : 'Non-retriable error'}`);
+          break;
         }
         
-        if (error.response && error.response.status !== 500) {
-          throw error; // Don't retry if it's not a server error
-        }
-        
-        retries--;
-        if (retries > 0) {
-          const delay = 1000 * (4 - retries); // Progressive backoff: 1s, 2s, 3s
-          console.log(`Retrying request to ${url} in ${delay}ms, ${retries} attempts remaining`);
-          await new Promise(resolve => setTimeout(resolve, delay));
-        }
+        // Calculate backoff delay: 1s, 3s, 9s
+        const delayMs = Math.pow(3, retryCount - 1) * 1000;
+        console.log(`Retrying request to ${fullUrl} in ${delayMs}ms (attempt ${retryCount} of ${MAX_RETRIES})`);
+        await new Promise(resolve => setTimeout(resolve, delayMs));
       }
     }
     
-    throw lastError;
+    // If we get here with a lastError, we've exhausted retries
+    if (lastError) {
+      throw lastError;
+    }
+    
+    // This should not happen, but just in case
+    throw new Error(`Request failed after ${MAX_RETRIES} retries`);
   } catch (error) {
     console.error(`Error in ${method} request to ${url}:`, error);
     
     if (error.response) {
+      // The request was made and the server responded with a status code
+      // that falls out of the range of 2xx
       console.error('Error response:', {
         status: error.response.status,
         data: error.response.data
       });
+      
+      // For authentication errors, clear token and redirect to login
+      if (error.response.status === 401) {
+        console.log('Authentication error - clearing token');
+        localStorage.removeItem('token');
+        
+        // Only redirect if we're not already on the login page
+        if (window.location.pathname !== '/login' && window.location.pathname !== '/admin/login') {
+          window.location.href = '/admin/login';
+        }
+      }
+      
       throw {
-        message: error.response.data?.error || `Server error: ${error.response.status}`,
+        message: error.response.data?.message || error.response.data?.error || `Server error: ${error.response.status}`,
         status: error.response.status,
         data: error.response.data
       };
     } else if (error.request) {
+      // The request was made but no response was received
       console.error('No response received:', error.request);
       throw {
         message: 'No response from server. The server might be down or there might be a network/CORS issue.',
         request: error.request
       };
     } else {
+      // Something happened in setting up the request that triggered an Error
       console.error('Error setting up request:', error.message);
       throw {
         message: `Request error: ${error.message}`,
