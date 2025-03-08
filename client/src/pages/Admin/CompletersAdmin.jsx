@@ -372,19 +372,38 @@ const CompletersAdmin = () => {
                   </button>
                   <button
                     onClick={async () => {
-                      const data = await fetchCompleterById(completer._id);
-                      if (data) {
-                        setFormData({
-                          projectName: data.projectName,
-                          profile: data.profile,
-                          position: data.position,
-                          description: data.description,
-                          funding: data.funding,
-                          linkedinUrl: data.linkedinUrl,
-                          visible: data.visible
-                        });
-                        setEditingId(data._id);
-                        setShowAddForm(true);
+                      try {
+                        setIsLoading(true);
+                        console.log('Fetching completer for editing:', completer._id);
+                        const data = await apiRequest('get', `${API_ENDPOINTS.ADMIN_COMPLETERS}/${completer._id}`);
+                        console.log('Received completer data for editing:', data);
+                        
+                        if (data) {
+                          // Pre-fill the form
+                          setFormData({
+                            projectName: data.projectName || '',
+                            profile: data.profile || '',
+                            position: data.position || '',
+                            description: data.description || '',
+                            funding: data.funding || '',
+                            linkedinUrl: data.linkedinUrl || '',
+                            visible: data.visible !== false // Default to true if undefined
+                          });
+                          
+                          // Set the editing ID and show the form
+                          setEditingId(completer._id);
+                          setShowAddForm(true);
+                          
+                          // Scroll to the form
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        } else {
+                          setError('Failed to load completer data for editing');
+                        }
+                      } catch (err) {
+                        console.error('Error fetching completer for editing:', err);
+                        setError('Failed to load completer data: ' + (err.message || 'Unknown error'));
+                      } finally {
+                        setIsLoading(false);
                       }
                     }}
                     className="bg-blue-600 text-white px-3 py-1 rounded"

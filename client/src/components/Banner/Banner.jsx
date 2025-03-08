@@ -26,9 +26,30 @@ const Banner = ({
   
       setIsLoading(true);
       console.log('Attempting to subscribe with email:', email);
-      console.log('Using API endpoint:', API_ENDPOINTS.SUBSCRIBERS);
       
-      const res = await axios.post(API_ENDPOINTS.SUBSCRIBERS, { email });
+      // Get the current domain and determine the API URL
+      const currentDomain = window.location.hostname;
+      let apiUrl = 'http://localhost:5000';
+      
+      if (currentDomain.includes('startupathon-kdu7.vercel.app')) {
+        apiUrl = 'https://startupathon.vercel.app';
+      } else if (currentDomain.includes('startupathon.vercel.app')) {
+        apiUrl = 'https://startupathon.vercel.app';
+      }
+      
+      // Ensure the URL is properly formatted
+      const normalizedApiUrl = apiUrl.endsWith('/') ? apiUrl.slice(0, -1) : apiUrl;
+      const fullUrl = `${normalizedApiUrl}${API_ENDPOINTS.SUBSCRIBERS}`;
+      
+      console.log('Using full URL for subscription:', fullUrl);
+      
+      // Make the POST request with explicit headers
+      const res = await axios.post(fullUrl, { email }, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      });
       
       console.log('Subscription successful:', res.data);
       setMessage({ 
