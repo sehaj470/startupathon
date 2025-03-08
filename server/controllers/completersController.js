@@ -1,11 +1,33 @@
 const Completer = require('../models/Completer');
+const mongoose = require('mongoose');
+const connectDB = require('../config/db');
 
 exports.getAllCompleters = async (req, res) => {
   try {
-      const completers = await Completer.find({ visible: true });
-      res.json(completers);
+    console.log('Getting all completers - Admin request');
+    
+    // Ensure database connection
+    if (mongoose.connection.readyState !== 1) {
+      console.log('Database not connected, attempting to connect...');
+      await connectDB();
+    }
+    
+    // Set content type explicitly
+    res.setHeader('Content-Type', 'application/json');
+    
+    // Get all completers, not just visible ones for admin
+    const completers = await Completer.find().sort({ createdAt: -1 });
+    
+    console.log(`Found ${completers.length} completers`);
+    
+    // Return completers as JSON
+    res.status(200).json(completers);
   } catch (err) {
-      res.status(500).json({ error: err.message });
+    console.error('Error getting completers:', err);
+    res.status(500).json({ 
+      error: 'Failed to get completers',
+      message: err.message 
+    });
   }
 };
 

@@ -1,28 +1,55 @@
 const Subscriber = require('../models/Subscriber');
+const mongoose = require('mongoose');
+const connectDB = require('../config/db');
 
 exports.getAllSubscribers = async (req, res) => {
   try {
+    console.log('Getting all subscribers - Admin request');
+    
+    // Ensure database connection
+    if (mongoose.connection.readyState !== 1) {
+      console.log('Database not connected, attempting to connect...');
+      await connectDB();
+    }
+    
+    // Set content type explicitly
+    res.setHeader('Content-Type', 'application/json');
+    
+    // Get pagination parameters
     const page = parseInt(req.query.page) || 1;
     const limit = 10;
     const search = req.query.search || '';
+
+    console.log(`Pagination: page=${page}, limit=${limit}, search=${search}`);
 
     const query = search 
       ? { email: { $regex: search, $options: 'i' } }
       : {};
 
+    // Get total count for pagination
     const total = await Subscriber.countDocuments(query);
+    
+    // Get subscribers with pagination
     const subscribers = await Subscriber.find(query)
       .sort({ subscriptionDate: -1 })
       .skip((page - 1) * limit)
       .limit(limit);
 
-    res.json({
+    console.log(`Found ${subscribers.length} subscribers (total: ${total})`);
+    
+    // Return subscribers with pagination info
+    res.status(200).json({
       subscribers,
       totalPages: Math.ceil(total / limit),
-      currentPage: page
+      currentPage: page,
+      total
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Error getting subscribers:', err);
+    res.status(500).json({ 
+      error: 'Failed to get subscribers',
+      message: err.message 
+    });
   }
 };
 

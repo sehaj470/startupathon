@@ -38,21 +38,33 @@ const ChallengesAdmin = () => {
     try {
       setLoading(true);
       setError(null);
-      console.log('Fetching challenges...');
+      console.log('Fetching challenges from admin endpoint...');
       
-      // Use the apiRequest function instead of axios directly
+      // Use the apiRequest function with the admin endpoint
       const data = await apiRequest('get', API_ENDPOINTS.ADMIN_CHALLENGES);
       
       console.log('Challenges response:', data);
+      
+      // Check if we got a valid response
       if (Array.isArray(data)) {
-        setChallenges(data);
+        if (data.length === 0) {
+          console.log('No challenges found in database');
+          setChallenges([]);
+        } else {
+          console.log(`Found ${data.length} challenges`);
+          setChallenges(data);
+        }
       } else {
         console.error('Unexpected data format:', data);
         setError('Received invalid data format from server');
+        setChallenges([]);
       }
     } catch (err) {
       console.error('Error fetching challenges:', err);
       setError(err.message || 'Error fetching challenges');
+      setChallenges([]);
+      
+      // Handle authentication errors
       if (err.status === 401) {
         localStorage.removeItem('token');
         navigate('/admin/login');

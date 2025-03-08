@@ -17,26 +17,39 @@ const SubscribersAdmin = () => {
     try {
       setLoading(true);
       setError('');
-      console.log('Fetching subscribers from:', `${API_ENDPOINTS.ADMIN_SUBSCRIBERS}?page=${page}&search=${search}`);
+      console.log('Fetching subscribers from admin endpoint:', `${API_ENDPOINTS.ADMIN_SUBSCRIBERS}?page=${page}&search=${search}`);
       
-      // Use apiRequest instead of axios
+      // Use apiRequest with the admin endpoint
       const data = await apiRequest('get', `${API_ENDPOINTS.ADMIN_SUBSCRIBERS}?page=${page}&search=${search}`);
       
       console.log('Subscribers data received:', data);
-      if (data.subscribers && Array.isArray(data.subscribers)) {
+      
+      // Check if we got a valid response with the expected format
+      if (data && data.subscribers && Array.isArray(data.subscribers)) {
+        if (data.subscribers.length === 0) {
+          console.log('No subscribers found');
+        } else {
+          console.log(`Found ${data.subscribers.length} subscribers`);
+        }
+        
         setSubscribers(data.subscribers);
         setTotalPages(data.totalPages || 1);
       } else if (Array.isArray(data)) {
         // Handle case where API just returns an array of subscribers
+        console.log(`Found ${data.length} subscribers (array format)`);
         setSubscribers(data);
         setTotalPages(1);
       } else {
         console.error('Unexpected data format:', data);
         setError('Received invalid data format from server');
+        setSubscribers([]);
       }
     } catch (err) {
       console.error('Error fetching subscribers:', err);
       setError(err.message || 'Failed to fetch subscribers');
+      setSubscribers([]);
+      
+      // Handle authentication errors
       if (err.status === 401) {
         navigate('/admin/login');
       }

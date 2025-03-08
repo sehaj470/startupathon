@@ -47,21 +47,33 @@ const CompletersAdmin = () => {
     try {
       setIsLoading(true);
       setError('');
-      console.log('Fetching completers...');
+      console.log('Fetching completers from admin endpoint...');
       
-      // Use apiRequest instead of axios
+      // Use apiRequest with the admin endpoint
       const data = await apiRequest('get', API_ENDPOINTS.ADMIN_COMPLETERS);
       
       console.log('Completers response:', data);
+      
+      // Check if we got a valid response
       if (Array.isArray(data)) {
-        setCompleters(data);
+        if (data.length === 0) {
+          console.log('No completers found in database');
+          setCompleters([]);
+        } else {
+          console.log(`Found ${data.length} completers`);
+          setCompleters(data);
+        }
       } else {
         console.error('Unexpected data format:', data);
         setError('Received invalid data format from server');
+        setCompleters([]);
       }
     } catch (err) {
       console.error('Error fetching completers:', err);
       setError(err.message || 'Error fetching completers');
+      setCompleters([]);
+      
+      // Handle authentication errors
       if (err.status === 401) {
         localStorage.removeItem('token');
         navigate('/admin/login');

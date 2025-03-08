@@ -1,12 +1,34 @@
 // server/controllers/challengesController.js
 const Challenge = require('../models/Challenge');
+const mongoose = require('mongoose');
+const connectDB = require('../config/db');
 
 exports.getAllChallenges = async (req, res) => {
   try {
-    const challenges = await Challenge.find().sort({ _id: 1 });
-    res.json(challenges);
+    console.log('Getting all challenges - Admin request');
+    
+    // Ensure database connection
+    if (mongoose.connection.readyState !== 1) {
+      console.log('Database not connected, attempting to connect...');
+      await connectDB();
+    }
+    
+    // Set content type explicitly
+    res.setHeader('Content-Type', 'application/json');
+    
+    // Get challenges from database
+    const challenges = await Challenge.find().sort({ createdAt: -1 });
+    
+    console.log(`Found ${challenges.length} challenges`);
+    
+    // Return challenges as JSON
+    res.status(200).json(challenges);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Error getting challenges:', err);
+    res.status(500).json({ 
+      error: 'Failed to get challenges',
+      message: err.message 
+    });
   }
 };
 
