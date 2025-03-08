@@ -74,7 +74,7 @@ const HomeChallenges = () => {
                   flex flex-col
                   items-center
                   text-center
-                  w-[400px]
+                  
                   h-[450px]
                   mx-auto
                   shadow-sm
