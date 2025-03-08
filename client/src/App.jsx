@@ -121,13 +121,7 @@ function App() {
       } />
 
       {/* Route for completer details */}
-      <Route path="/completers/:id" element={
-        <>
-          <NavbarGROK scrollToSection={scrollToSection} />
-          <CompleterDetails />
-          <Footer />
-        </>
-      } />
+      <Route path="/completers/:id" element={<CompleterDetails />} />
 
       {/* Admin Routes */}
       <Route path="/admin/login" element={<Login />} />
