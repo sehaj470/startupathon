@@ -159,7 +159,13 @@ const HomeCompleters = () => {
 
                 {/* View More Details Button - Full Width */}
                 <button
-                  onClick={() => navigate(`/completers/${completer._id}`)}
+                  onClick={() => {
+                    const detailUrl = `/completers/${completer._id}`;
+                    console.log('Navigating to:', detailUrl);
+                    
+                    // Force the browser to navigate to this URL
+                    window.location.href = detailUrl;
+                  }}
                   className="
                     bg-[#7F5ED5] text-white rounded-md px-4 py-2 apply-fellowship-btn transition-colors duration-200 hover:bg-[#855DEF] h-[40px] flex items-center justify-center mt-2 
                   "
