@@ -41,7 +41,7 @@ const CompleterDetails = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0A0111] flex items-center justify-center text-white">
+      <div className="min-h-screen bg-[#0A0111] flex items-center justify-center text-white pt-24">
         Loading...
       </div>
     );
@@ -49,26 +49,28 @@ const CompleterDetails = () => {
 
   if (error || !completer) {
     return (
-      <div className="min-h-screen bg-[#0A0111] flex items-center justify-center text-white">
+      <div className="min-h-screen bg-[#0A0111] flex items-center justify-center text-white pt-24">
         {error || 'Completer not found'}
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0111] py-12 px-4">
+    <div className="min-h-screen bg-[#0A0111] py-12 px-4 pt-24">
       <div className="max-w-4xl mx-auto bg-[#1E0635] rounded-lg overflow-hidden shadow-xl border border-[#8B6FD0]">
         {/* Header with image */}
-        <div className="h-64 relative">
-          <img
-            src={getImageUrl(completer.profilePicture, 'completers')}
-            alt={completer.projectName}
-            className="w-full h-full object-cover"
-            onError={(e) => {
-              e.target.onerror = null;
-              e.target.src = 'https://via.placeholder.com/1200x400';
-            }}
-          />
+        <div className="relative">
+          <div className="w-full h-[300px]">
+            <img
+              src={getImageUrl(completer.profilePicture, 'completers')}
+              alt={completer.projectName}
+              className="w-full h-full object-cover object-center"
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.src = 'https://via.placeholder.com/1200x400';
+              }}
+            />
+          </div>
           <div className="absolute inset-0 bg-gradient-to-t from-[#0A0111] to-transparent"></div>
           <div className="absolute bottom-4 left-6">
             <h1 className="text-3xl font-bold text-white">{completer.projectName}</h1>
