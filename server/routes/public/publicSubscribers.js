@@ -4,10 +4,11 @@ const Subscriber = require('../../models/Subscriber');
 
 // Set explicit CORS headers on all routes in this router
 router.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', 'https://startupathon-kdu7.vercel.app');
+  res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   
+  // Handle OPTIONS requests
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
@@ -21,7 +22,7 @@ router.get('/', async (req, res) => {
     console.log('Fetching subscribers from database...');
     const subscribers = await Subscriber.find().sort({ createdAt: -1 });
     console.log(`Found ${subscribers.length} subscribers`);
-    
+
     // Set content type explicitly to ensure JSON response
     res.setHeader('Content-Type', 'application/json');
     res.status(200).json(subscribers);
@@ -34,6 +35,7 @@ router.get('/', async (req, res) => {
 // POST new subscriber
 router.post('/', async (req, res) => {
   try {
+    console.log('Creating new subscriber with data:', req.body);
     const { email } = req.body;
     
     // Validate email
@@ -51,6 +53,7 @@ router.post('/', async (req, res) => {
     const subscriber = new Subscriber({ email });
     await subscriber.save();
     
+    console.log('Subscriber created successfully:', subscriber);
     res.status(201).json({ message: 'Subscription successful', subscriber });
   } catch (error) {
     console.error('Error creating subscriber:', error);
