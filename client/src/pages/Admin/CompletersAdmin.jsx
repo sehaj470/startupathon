@@ -169,7 +169,7 @@ const CompletersAdmin = () => {
     if (window.confirm('Are you sure you want to delete this completer?')) {
       try {
         setIsLoading(true);
-        await apiRequest('delete', `${API_ENDPOINTS.ADMIN_COMPLETERS}/${id}`, getAuthConfig());
+        await apiRequest('delete', `${API_ENDPOINTS.ADMIN_COMPLETERS}/${id}`, null, getAuthConfig());
         
         // Update the state after successful deletion
         setCompleters(completers.filter(comp => comp._id !== id));
@@ -202,14 +202,23 @@ const CompletersAdmin = () => {
     setError('');
   };
 
+  // Loading state
+  if (isLoading && completers.length === 0) {
+    return (
+      <div className="bg-[#0A0111] min-h-screen py-8 text-white text-center font-sans">
+        Loading completers...
+      </div>
+    );
+  }
+
   return (
-    <div className="p-6 bg-[#0A0111] min-h-screen text-white">
+    <div className="bg-[#0A0111] min-h-screen py-8 text-white font-sans px-6">
       <div className='flex justify-between items-center mb-6'>
-        <h1 className="text-3xl font-bold mb-6">Manage Completers</h1>
+        <h1 className="text-3xl md:text-4xl font-bold">Manage Completers</h1>
         
         <button
           onClick={() => setShowAddForm(!showAddForm)}
-          className="bg-[#7F5ED5] text-white px-4 py-2 rounded hover:bg-[#855DEF] transition-colors mb-6 cursor-pointer"
+          className="bg-[#7F5ED5] text-white px-4 py-2 rounded hover:bg-[#855DEF] transition-colors cursor-pointer"
         >
           {showAddForm ? 'Cancel' : 'Add New Completer'}
         </button>
@@ -217,14 +226,14 @@ const CompletersAdmin = () => {
 
       {/* Display errors */}
       {error && (
-        <div className="bg-red-500 text-white p-3 rounded mb-4">
+        <div className="bg-red-500 text-white p-3 rounded mb-6">
           {error}
         </div>
       )}
 
       {/* Add/Edit Form */}
       {showAddForm && (
-        <form onSubmit={handleSubmit} className="bg-[#1c0c2e] p-6 rounded-lg mb-6">
+        <form onSubmit={handleSubmit} className="bg-[#1E0635] p-6 rounded-lg mb-8 border border-[#8B6FD0]">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block mb-2">Project Name</label>
@@ -232,7 +241,7 @@ const CompletersAdmin = () => {
                 type="text"
                 value={formData.projectName}
                 onChange={(e) => setFormData({...formData, projectName: e.target.value})}
-                className="w-full p-2 rounded bg-gray-800"
+                className="w-full p-2 rounded bg-[#0A0111] border border-[#8B6FD0]"
                 required
               />
             </div>
@@ -243,7 +252,7 @@ const CompletersAdmin = () => {
                 type="text"
                 value={formData.profile}
                 onChange={(e) => setFormData({...formData, profile: e.target.value})}
-                className="w-full p-2 rounded bg-gray-800"
+                className="w-full p-2 rounded bg-[#0A0111] border border-[#8B6FD0]"
                 required
               />
             </div>
@@ -254,7 +263,7 @@ const CompletersAdmin = () => {
                 type="text"
                 value={formData.position}
                 onChange={(e) => setFormData({...formData, position: e.target.value})}
-                className="w-full p-2 rounded bg-gray-800"
+                className="w-full p-2 rounded bg-[#0A0111] border border-[#8B6FD0]"
                 required
               />
             </div>
@@ -265,7 +274,7 @@ const CompletersAdmin = () => {
                 type="text"
                 value={formData.funding}
                 onChange={(e) => setFormData({...formData, funding: e.target.value})}
-                className="w-full p-2 rounded bg-gray-800"
+                className="w-full p-2 rounded bg-[#0A0111] border border-[#8B6FD0]"
                 required
               />
             </div>
@@ -276,20 +285,22 @@ const CompletersAdmin = () => {
                 type="url"
                 value={formData.linkedinUrl}
                 onChange={(e) => setFormData({...formData, linkedinUrl: e.target.value})}
-                className="w-full p-2 rounded bg-gray-800"
+                className="w-full p-2 rounded bg-[#0A0111] border border-[#8B6FD0]"
                 required
               />
             </div>
 
             <div>
               <label className="block mb-2">Visible</label>
-              <input
-                type="checkbox"
-                checked={formData.visible}
-                onChange={(e) => setFormData({...formData, visible: e.target.checked})}
-                className="mr-2"
-              />
-              <span>Show on website</span>
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={formData.visible}
+                  onChange={(e) => setFormData({...formData, visible: e.target.checked})}
+                  className="mr-2 h-5 w-5"
+                />
+                <span>Show on website</span>
+              </div>
             </div>
 
             <div className="md:col-span-2">
@@ -297,17 +308,17 @@ const CompletersAdmin = () => {
               <textarea
                 value={formData.description}
                 onChange={(e) => setFormData({...formData, description: e.target.value})}
-                className="w-full p-2 rounded bg-gray-800 h-32"
+                className="w-full p-2 rounded bg-[#0A0111] border border-[#8B6FD0] h-32"
                 required
               />
             </div>
 
-            <div>
+            <div className="md:col-span-2">
               <label className="block mb-2">Profile Picture</label>
               <input
                 type="file"
                 onChange={handleImageChange}
-                className="w-full p-2"
+                className="w-full p-2 bg-[#0A0111] rounded border border-[#8B6FD0]"
                 accept="image/*"
               />
               <small className="text-gray-400 block mt-1">
@@ -320,7 +331,7 @@ const CompletersAdmin = () => {
             <button
               type="button"
               onClick={resetForm}
-              className="bg-gray-600 text-white px-4 py-2 rounded mr-2"
+              className="bg-gray-700 text-white px-4 py-2 rounded mr-2 hover:bg-gray-600 transition-colors"
             >
               Cancel
             </button>
@@ -335,87 +346,146 @@ const CompletersAdmin = () => {
         </form>
       )}
 
-      {/* Completers List */}
-      <div className="overflow-x-auto">
-        <table className="min-w-full bg-[#1c0c2e] rounded-lg">
-          <thead>
-            <tr>
-              <th className="p-3 text-left">Image</th>
-              <th className="p-3 text-left">Project</th>
-              <th className="p-3 text-left">Profile</th>
-              <th className="p-3 text-left">Position</th>
-              <th className="p-3 text-left">Visible</th>
-              <th className="p-3 text-left">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {completers.map(completer => (
-              <tr key={completer._id} className="border-t border-gray-700">
-                <td className="p-3">
-                  <img 
-                    src={getImageUrl(completer.profilePicture)} 
-                    alt={completer.projectName}
-                    className="w-16 h-16 object-cover rounded"
-                  />
-                </td>
-                <td className="p-3">{completer.projectName}</td>
-                <td className="p-3">{completer.profile}</td>
-                <td className="p-3">{completer.position}</td>
-                <td className="p-3">{completer.visible ? 'Yes' : 'No'}</td>
-                <td className="p-3">
-                  <button
-                    onClick={() => handleDelete(completer._id)}
-                    className="bg-red-600 text-white px-3 py-1 rounded mr-2"
-                    disabled={isLoading}
-                  >
-                    Delete
-                  </button>
-                  <button
-                    onClick={async () => {
-                      try {
-                        setIsLoading(true);
-                        console.log('Fetching completer for editing:', completer._id);
-                        const data = await apiRequest('get', `${API_ENDPOINTS.ADMIN_COMPLETERS}/${completer._id}`);
-                        console.log('Received completer data for editing:', data);
+      {/* Completers Grid */}
+      <div className="max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {completers.map(completer => (
+            <div
+              key={completer._id}
+              className="bg-[#1E0635] rounded-lg p-4 w-full transition-colors hover:bg-[#19052d] flex flex-col border border-[#8B6FD0]"
+            >
+              {/* Project Name */}
+              <h2 className="text-2xl font-semibold text-white mb-3">
+                {completer.projectName}
+              </h2>
+
+              {/* Two-Column Layout */}
+              <div className="flex flex-row flex-grow gap-4">
+                {/* Left Column: image */}
+                <div className="w-1/2 flex flex-col items-center">
+                  <div className="relative w-full h-32">
+                    <img
+                      src={getImageUrl(completer.profilePicture)}
+                      alt={completer.profile}
+                      className="absolute w-full h-full object-cover rounded-lg"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = 'https://via.placeholder.com/150';
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Right Column: Profile/Position/Visibility */}
+                <div className="w-1/2 flex flex-col">
+                  <h3 className="text-lg font-bold text-white">
+                    {completer.profile}
+                  </h3>
+                  <p className="text-gray-300">{completer.position}</p>
+                  
+                  <div className="mt-2 flex items-center">
+                    <span className="text-sm text-gray-300 mr-2">Visibility:</span>
+                    <span className={`text-sm ${completer.visible ? 'text-green-400' : 'text-red-400'}`}>
+                      {completer.visible ? 'Visible' : 'Hidden'}
+                    </span>
+                  </div>
+
+                  {/* LinkedIn Icon */}
+                  <div className="mt-2">
+                    <a
+                      href={completer.linkedinUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-[#7745f5] hover:bg-blue-500 transition-colors"
+                    >
+                      {/* LinkedIn 'in' SVG icon */}
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="currentColor"
+                        viewBox="0 0 448 512"
+                        className="w-4 h-4 text-white"
+                      >
+                        <path d="M100.28 448H7.4V149.5h92.88zM53.79 108.1a53.79 53.79 0 1 1 53.79-53.79 53.79 53.79 0 0 1-53.79 53.79zM447.9 448h-92.68V302.4c0-34.7-.7-79.3-48.34-79.3-48.4 0-55.8 37.8-55.8 76.7V448H158V149.5h89V185h1.3c12.4-23.5 42.6-48.3 87.7-48.3 93.9 0 111.1 61.8 111.1 142.3V448z" />
+                      </svg>
+                    </a>
+                  </div>
+                </div>
+              </div>
+
+              {/* Funding */}
+              <p className="mt-3 text-md text-white">
+                Initial Funding: 
+                <span className="ml-1 text-[#714EC4] font-bold">
+                  {completer.funding}
+                </span>
+              </p>
+
+              {/* Description (truncated) */}
+              <p className="text-gray-300 text-sm mt-2 line-clamp-2 mb-3">
+                {completer.description}
+              </p>
+
+              {/* Admin Actions */}
+              <div className="flex justify-between mt-auto pt-2">
+                <button
+                  onClick={() => handleDelete(completer._id)}
+                  className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 transition-colors"
+                  disabled={isLoading}
+                >
+                  Delete
+                </button>
+                <button
+                  onClick={async () => {
+                    try {
+                      setIsLoading(true);
+                      console.log('Fetching completer for editing:', completer._id);
+                      const data = await apiRequest('get', `${API_ENDPOINTS.ADMIN_COMPLETERS}/${completer._id}`);
+                      console.log('Received completer data for editing:', data);
+                      
+                      if (data) {
+                        // Pre-fill the form
+                        setFormData({
+                          projectName: data.projectName || '',
+                          profile: data.profile || '',
+                          position: data.position || '',
+                          description: data.description || '',
+                          funding: data.funding || '',
+                          linkedinUrl: data.linkedinUrl || '',
+                          visible: data.visible !== false // Default to true if undefined
+                        });
                         
-                        if (data) {
-                          // Pre-fill the form
-                          setFormData({
-                            projectName: data.projectName || '',
-                            profile: data.profile || '',
-                            position: data.position || '',
-                            description: data.description || '',
-                            funding: data.funding || '',
-                            linkedinUrl: data.linkedinUrl || '',
-                            visible: data.visible !== false // Default to true if undefined
-                          });
-                          
-                          // Set the editing ID and show the form
-                          setEditingId(completer._id);
-                          setShowAddForm(true);
-                          
-                          // Scroll to the form
-                          window.scrollTo({ top: 0, behavior: 'smooth' });
-                        } else {
-                          setError('Failed to load completer data for editing');
-                        }
-                      } catch (err) {
-                        console.error('Error fetching completer for editing:', err);
-                        setError('Failed to load completer data: ' + (err.message || 'Unknown error'));
-                      } finally {
-                        setIsLoading(false);
+                        // Set the editing ID and show the form
+                        setEditingId(completer._id);
+                        setShowAddForm(true);
+                        
+                        // Scroll to the form
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      } else {
+                        setError('Failed to load completer data for editing');
                       }
-                    }}
-                    className="bg-blue-600 text-white px-3 py-1 rounded"
-                    disabled={isLoading}
-                  >
-                    Edit
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                    } catch (err) {
+                      console.error('Error fetching completer for editing:', err);
+                      setError('Failed to load completer data: ' + (err.message || 'Unknown error'));
+                    } finally {
+                      setIsLoading(false);
+                    }
+                  }}
+                  className="bg-[#7F5ED5] text-white px-3 py-1 rounded hover:bg-[#855DEF] transition-colors"
+                  disabled={isLoading}
+                >
+                  Edit
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* No completers message */}
+        {completers.length === 0 && !isLoading && (
+          <div className="text-center py-8">
+            <p className="text-xl text-gray-400">No completers found. Add your first completer using the button above.</p>
+          </div>
+        )}
       </div>
     </div>
   );
