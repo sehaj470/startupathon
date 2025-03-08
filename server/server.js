@@ -6,6 +6,29 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 const connectDB = require('./config/db');
 const { checkEnvVars } = require('./checkEnv');
+const { verifyAdmin } = require('./middlewares/authMiddleware');
+const jwt = require('jsonwebtoken');
+
+// Define verifyToken middleware
+const verifyToken = (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader?.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'No token provided' });
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    
+    req.user = decoded;
+    next();
+  } catch (err) {
+    console.error('Auth error:', err);
+    return res.status(401).json({ error: 'Token invalid or expired' });
+  }
+};
 
 const challengeRoutes = require('./routes/admin/challengesRoutes');
 const founderRoutes = require('./routes/admin/foundersRoutes');
